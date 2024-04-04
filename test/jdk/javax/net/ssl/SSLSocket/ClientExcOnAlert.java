@@ -55,6 +55,9 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+
 public class ClientExcOnAlert {
     // This is a PKCS#12 keystore created with the following command:
     // keytool -genkeypair -alias testcert -keyalg rsa -keysize 2048
@@ -66,6 +69,7 @@ public class ClientExcOnAlert {
     // file.
     private static int serverPort = -1;
     private static final String KEYSTORE_PASS = "password";
+    // private static final String KEYSTORE_PEM_FIPS = ;
     private static final String KEYSTORE_PEM =
         "MIIJrwIBAzCCCWgGCSqGSIb3DQEHAaCCCVkEgglVMIIJUTCCBW0GCSqGSIb3DQEH\n" +
         "AaCCBV4EggVaMIIFVjCCBVIGCyqGSIb3DQEMCgECoIIE+zCCBPcwKQYKKoZIhvcN\n" +
@@ -124,6 +128,7 @@ public class ClientExcOnAlert {
     static final Condition serverReady = lock.newCondition();
 
     public static void main(String[] args) throws Exception {
+        printPEM(KEYSTORE_PEM);
         Thread serverThread = new Thread(() -> {
                     try {
                         doServerSide();
@@ -134,7 +139,6 @@ public class ClientExcOnAlert {
                 }
         );
         serverThread.start();
-
         try {
             doClientSide((args == null || args.length < 1) ? null : args[0]);
             throw new RuntimeException("Expected SSLException did not occur!");
@@ -143,7 +147,6 @@ public class ClientExcOnAlert {
         } finally {
             serverThread.join();
         }
-
     }
 
     static void doServerSide() throws Exception {
@@ -151,11 +154,10 @@ public class ClientExcOnAlert {
         SSLContext sslc = SSLContext.getInstance("TLS");
         log("doServerSide start");
         KeyManagerFactory kmf = createKeyManagerFactory(KEYSTORE_PEM,
-                KEYSTORE_PASS);
+                KEYSTORE_PASS);      
         sslc.init(kmf.getKeyManagers(), null, null);
         SSLServerSocketFactory ssf =
                 (SSLServerSocketFactory)sslc.getServerSocketFactory();
-
         try (SSLServerSocket sslServerSocket =
                 (SSLServerSocket)ssf.createServerSocket(0)) {
             sslServerSocket.setReuseAddress(true);
@@ -246,5 +248,25 @@ public class ClientExcOnAlert {
                 System.currentTimeMillis(), Thread.currentThread().getName()));
         sb.append(String.format(msgFmt, args));
         System.out.println(sb.toString());
+    }
+
+    private static void printPEM(String KEYSTORE_PEM) {
+        Base64.Decoder b64dec = Base64.getMimeDecoder();
+        byte[] pemBytes = b64dec.decode(KEYSTORE_PEM);
+
+        try {
+            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(pemBytes));
+
+            System.out.println("Certificate:");
+            System.out.println("  Subject: " + cert.getSubjectX500Principal().getName());
+            System.out.println("  Issuer: " + cert.getIssuerX500Principal().getName());
+            System.out.println("  Serial Number: " + cert.getSerialNumber());
+            System.out.println("  Valid from: " + cert.getNotBefore());
+            System.out.println("  Valid until: " + cert.getNotAfter());
+            System.out.println("  Public Key Algorithm: " + cert.getPublicKey().getAlgorithm());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
