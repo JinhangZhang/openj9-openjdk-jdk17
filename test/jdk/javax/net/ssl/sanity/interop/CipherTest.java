@@ -58,6 +58,8 @@ public class CipherTest {
     static SecureRandom secureRandom;
 
     private static PeerFactory peerFactory;
+    public static final boolean ISFIPS = Boolean.parseBoolean(System.getProperty("semeru.fips"));
+    public static final String PROFILE = System.getProperty("semeru.customprofile");
 
     static abstract class Server implements Runnable {
 
@@ -135,8 +137,24 @@ public class CipherTest {
         factory = (SSLSocketFactory)SSLSocketFactory.getDefault();
         SSLSocket socket = (SSLSocket)factory.createSocket();
         String[] cipherSuites = socket.getSupportedCipherSuites();
-        String[] protocols = socket.getSupportedProtocols();
-        String[] clientAuths = {null, "RSA", "DSA"};
+        String[] protocols = null;
+        String[] clientAuths = null;
+        if (ISFIPS && PROFILE.equals("OpenJCEPlusFIPS.FIPS140-3-Test-TLS")) {
+            clientAuths = new String[]{null, "RSA"};
+            List<String> tmp = new ArrayList<>();
+            for (String protocol : socket.getSupportedProtocols()) {
+                if (protocol.equals("TLSv1.2") || protocol.equals("TLSv1.3")) {
+                    tmp.add(protocol);
+                }
+            }
+            if (tmp.size() == 0 || tmp == null) {
+                return;
+            }
+            protocols = tmp.toArray(new String[0]);
+        } else {
+            clientAuths = new String[]{null, "RSA", "DSA"};
+            protocols = socket.getSupportedProtocols();
+        }
         tests = new ArrayList<TestParameters>(
             cipherSuites.length * protocols.length * clientAuths.length);
         for (int j = 0; j < protocols.length; j++) {
@@ -248,6 +266,16 @@ public class CipherTest {
                 try {
                     runTest(params);
                     System.out.println("Passed " + params);
+                } catch (javax.net.ssl.SSLException sslException) {
+                    if (ISFIPS && PROFILE.equals("OpenJCEPlusFIPS.FIPS140-3-Test-TLS")) {
+                        if ("DSA signing not supported in FIPS".equals(sslException.getMessage())) {
+                            System.out.println("Expected exception msg: <DSA signing not supported in FIPS> is caught.");
+                        } else {
+                            cipherTest.setFailed();
+                            System.out.println("** Failed " + params + "**");
+                            sslException.printStackTrace();
+                        }
+                    }
                 } catch (Exception e) {
                     cipherTest.setFailed();
                     System.out.println("** Failed " + params + "**");

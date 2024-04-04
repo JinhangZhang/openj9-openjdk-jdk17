@@ -47,9 +47,13 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 /*
  * @test
  * @bug 8208496
+ * @library /test/lib
  * @summary Test to verify concurrent behavior of TLS.
  * @run main/othervm ConcurrentClientAccessTest
  */
@@ -58,10 +62,13 @@ public class ConcurrentClientAccessTest {
     private static final int THREADS = 50;
 
     public static void main(String[] args) throws Exception {
-
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
-        for (String tlsProtocol : new String[]{"TLSv1.3", "TLSv1.2",
-            "TLSv1.1", "TLSv1"}) {
+        String[] protocols = new String[]{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1"};
+        if (!(Utils.isFIPS())) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        } else {
+            protocols = new String[]{"TLSv1.3", "TLSv1.2"};
+        }
+        for (String tlsProtocol : protocols) {
             System.out.printf("Protocol: %s%n", tlsProtocol);
             CountDownLatch tillServerReady = new CountDownLatch(1);
             Server server = new Server(tlsProtocol, tillServerReady);

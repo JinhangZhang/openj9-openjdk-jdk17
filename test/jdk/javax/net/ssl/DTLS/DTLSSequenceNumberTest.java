@@ -55,6 +55,9 @@ import javax.net.ssl.SSLException;
 import java.util.Random;
 import jdk.test.lib.RandomFactory;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 /**
  * Testing DTLS records sequence number property support in application data
  * exchange.
@@ -69,7 +72,9 @@ public class DTLSSequenceNumberTest extends SSLEngineTestCase {
 
     public static void main(String[] args) {
         DTLSSequenceNumberTest test = new DTLSSequenceNumberTest();
-        setUpAndStartKDCIfNeeded();
+        if (Utils.isFIPS()) {
+            setUpAndStartKDCIfNeeded();
+        }
         test.runTests();
     }
 

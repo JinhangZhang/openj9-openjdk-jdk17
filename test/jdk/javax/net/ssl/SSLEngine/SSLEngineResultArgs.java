@@ -25,7 +25,7 @@
  * @test
  * @bug 4965868
  * @summary SSLEngineResult constructor needs null argument description
- *
+ * @library /test/lib
  * @author Brad Wetmore
  */
 

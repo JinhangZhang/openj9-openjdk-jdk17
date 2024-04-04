@@ -41,7 +41,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+import java.util.*;
 
+import jdk.test.lib.Utils;
 import jdk.test.lib.security.SecurityUtils;
 
 public class Arrays {
@@ -187,14 +189,20 @@ public class Arrays {
         contextVersion = args[0];
         // Re-enable context version if it is disabled.
         // If context version is SSLv3, TLSv1 needs to be re-enabled.
-        if (contextVersion.equals("SSLv3")) {
-            SecurityUtils.removeFromDisabledTlsAlgs("TLSv1");
-        } else if (contextVersion.equals("TLSv1") ||
-                   contextVersion.equals("TLSv1.1")) {
-            SecurityUtils.removeFromDisabledTlsAlgs(contextVersion);
+        if (!(Utils.isFIPS())) {
+            if (contextVersion.equals("SSLv3")) {
+                SecurityUtils.removeFromDisabledTlsAlgs("TLSv1");
+            } else if (contextVersion.equals("TLSv1") ||
+                    contextVersion.equals("TLSv1.1")) {
+                SecurityUtils.removeFromDisabledTlsAlgs(contextVersion);
+            }
+        } else {
+            if (!SecurityUtils.TLS_PROTOCOLS.contains(contextVersion)) {
+                return;
+            }
         }
 
-        Arrays test;
+        Arrays test = null;
 
         test = new Arrays();
 

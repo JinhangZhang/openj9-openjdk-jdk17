@@ -32,6 +32,7 @@
  * @bug 6388456
  * @summary Need adjustable TLS max record size for interoperability
  *      with non-compliant
+ * @library /test/lib
  * @run main/othervm LargePacket
  *
  * @author Xuelei Fan

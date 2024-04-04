@@ -31,6 +31,7 @@
 /*
  * @test
  * @bug 7068321
+ * @library /test/lib
  * @summary Support TLS Server Name Indication (SNI) Extension in JSSE Server
  * @run main/othervm SSLSocketSNISensitive PKIX www.example.com
  * @run main/othervm SSLSocketSNISensitive SunX509 www.example.com
@@ -53,6 +54,10 @@ import java.security.cert.CertificateFactory;
 import java.security.spec.*;
 import java.security.interfaces.*;
 import java.util.Base64;
+
+import java.io.ByteArrayInputStream;
+
+import jdk.test.lib.Utils;
 
 // Note: this test case works only on TLS 1.2 and prior versions because of
 // the use of MD5withRSA signed certificate.
@@ -249,6 +254,8 @@ public class SSLSocketSNISensitive {
      */
     static boolean debug = false;
 
+    static String[] signatureAlgos = new String[5];
+
     /*
      * Define the server side of the test.
      *
@@ -361,6 +368,37 @@ public class SSLSocketSNISensitive {
         clientRequestedHostname = args[1];
     }
 
+    private static void printCert(String trustedCertStr, int index) {
+        try {
+            // Remove the "BEGIN CERTIFICATE" and "END CERTIFICATE" lines and any whitespace
+            String cleanedCert = trustedCertStr.replace("-----BEGIN CERTIFICATE-----", "")
+                                                .replace("-----END CERTIFICATE-----", "")
+                                                .replaceAll("\\s", "");
+
+            // Decode the base64 string to get the certificate bytes
+            byte[] certBytes = Base64.getDecoder().decode(cleanedCert);
+
+            // Create a CertificateFactory for X.509 certificates
+            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+
+            // Generate the X509Certificate object
+            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(certBytes));
+
+            // Print the certificate details
+            System.out.println("Issuer: " + cert.getIssuerDN());
+            System.out.println("Subject: " + cert.getSubjectDN());
+            System.out.println("Serial Number: " + cert.getSerialNumber());
+            System.out.println("Not Before: " + cert.getNotBefore());
+            System.out.println("Not After: " + cert.getNotAfter());
+            System.out.println("Signature Algorithm: " + cert.getSigAlgName());
+            System.out.println("Version: " + cert.getVersion());
+
+            signatureAlgos[index] = cert.getSigAlgName();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private static SSLContext generateSSLContext(boolean isClient)
             throws Exception {
 
@@ -369,6 +407,7 @@ public class SSLSocketSNISensitive {
 
         // create a key store
         KeyStore ks = KeyStore.getInstance("JKS");
+
         ks.load(null, null);
 
         // import the trused cert
@@ -434,10 +473,12 @@ public class SSLSocketSNISensitive {
 
     public static void main(String[] args) throws Exception {
         // MD5 is used in this test case, don't disable MD5 algorithm.
-        Security.setProperty("jdk.certpath.disabledAlgorithms",
-                "MD2, RSA keySize < 1024");
-        Security.setProperty("jdk.tls.disabledAlgorithms",
-                "SSLv3, RC4, DH keySize < 768");
+        if (!(Utils.isFIPS())) {
+            Security.setProperty("jdk.certpath.disabledAlgorithms",
+                    "MD2, RSA keySize < 1024");
+            Security.setProperty("jdk.tls.disabledAlgorithms",
+                    "SSLv3, RC4, DH keySize < 768");
+        }
 
         if (debug)
             System.setProperty("javax.net.debug", "all");
@@ -447,10 +488,35 @@ public class SSLSocketSNISensitive {
          */
         parseArguments(args);
 
+        System.out.println("Now printing trustedCertStr==================");
+        printCert(trustedCertStr, 0);
+        System.out.println("Now printing targetCertStr_A==================");
+        printCert(targetCertStr_A, 1);
+        System.out.println("Now printing targetCertStr_B==================");
+        printCert(targetCertStr_B, 2);
+        System.out.println("Now printing targetCertStr_C==================");
+        printCert(targetCertStr_C, 3);
+        System.out.println("Now printing targetCertStr_D==================");
+        printCert(targetCertStr_D, 4);
         /*
          * Start the tests.
          */
-        new SSLSocketSNISensitive();
+        try {
+            new SSLSocketSNISensitive();
+        } catch (Exception e) {
+            if (Utils.isFIPS()) {
+                for (int i=0; i<signatureAlgos.length; i++) {
+                    if (signatureAlgos[i].contains("MD5") 
+                     && e instanceof javax.net.ssl.SSLHandshakeException
+                     && "no cipher suites in common".equals(e.getMessage())) {
+                        System.out.println("Expected exception msg: <no cipher suites in common> is caught.");
+                        return;
+                    }
+                }
+            }
+            e.printStackTrace();
+            return;
+        }
     }
 
     Thread clientThread = null;

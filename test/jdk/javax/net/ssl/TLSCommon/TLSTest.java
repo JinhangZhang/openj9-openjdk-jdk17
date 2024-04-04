@@ -37,9 +37,11 @@ import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
+import java.security.Provider;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -54,9 +56,13 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 /*
  * @test
  * @bug 8205111
+ * @library /test/lib
  * @summary Test TLS with different types of supported keys.
  * @run main/othervm TLSTest TLSv1.3 rsa_pkcs1_sha1 TLS_AES_128_GCM_SHA256
  * @run main/othervm
@@ -156,10 +162,29 @@ public class TLSTest {
 
     public static void main(String[] args) throws Exception {
 
-        final String tlsProtocol = args[0];
+        String tlsProtocol = args[0];
         final KeyType keyType = KeyType.valueOf(args[1]);
-        final String cipher = args[2];
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        String cipher = args[2];
+        if (!(Utils.isFIPS())) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        } else {
+            if (!SecurityUtils.TLS_PROTOCOLS.contains(tlsProtocol)) {
+                System.out.println(tlsProtocol + " is not available.");
+                return;
+            }
+            if (!SecurityUtils.TLS_CIPHERSUITES.containsKey(cipher)) {
+                System.out.println(cipher + " is not available.");
+                return;
+            }
+            if (!SecurityUtils.TLS_CIPHERSUITES.get(cipher).equals(tlsProtocol)) {
+                System.out.println(cipher + " does not match " + tlsProtocol);
+                return;
+            }
+            if (args[1].contains("sha1")) {
+                System.out.println("FIPS140-3 does not support SHA1.");
+                return;
+            }
+        }
         CountDownLatch serverReady = new CountDownLatch(1);
         Server server = new Server(tlsProtocol, keyType, cipher, serverReady);
         server.start();

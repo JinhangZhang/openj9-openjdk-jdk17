@@ -48,6 +48,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 /**
  * Testing DTLS engines handshake using each of the supported cipher suites with
  * replicated packets check.
@@ -59,7 +62,9 @@ public class DTLSHandshakeWithReplicatedPacketsTest extends SSLEngineTestCase {
     public static void main(String[] args) {
         DTLSHandshakeWithReplicatedPacketsTest test
                 = new DTLSHandshakeWithReplicatedPacketsTest();
-        setUpAndStartKDCIfNeeded();
+        if (Utils.isFIPS()) {
+            setUpAndStartKDCIfNeeded();
+        }
         test.runTests();
     }
 

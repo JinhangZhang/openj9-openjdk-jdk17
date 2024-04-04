@@ -31,6 +31,7 @@
  * @bug 7068321 8190492
  * @summary Support TLS Server Name Indication (SNI) Extension in JSSE Server
  * @library ../templates
+ * @library /test/lib
  * @build SSLCapabilities SSLExplorer
  * @run main/othervm SSLSocketExplorer SSLv2Hello,SSLv3
  * @run main/othervm SSLSocketExplorer SSLv3
@@ -46,6 +47,9 @@ import java.util.*;
 import java.net.*;
 import javax.net.ssl.*;
 import java.security.Security;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class SSLSocketExplorer {
 
@@ -212,7 +216,14 @@ public class SSLSocketExplorer {
     private static String[] supportedProtocols;    // supported protocols
 
     private static void parseArguments(String[] args) {
-        supportedProtocols = args[0].split(",");
+        List<String> supportProtocols = new ArrayList<>();
+        for (String supportProtocol : args[0].split(",")) {
+            if (!SecurityUtils.TLS_PROTOCOLS.contains(supportProtocol)) {
+                continue;
+            }
+            supportProtocols.add(supportProtocol);
+        }
+        supportedProtocols = supportProtocols.toArray(new String[0]);
     }
 
 
@@ -230,7 +241,9 @@ public class SSLSocketExplorer {
     public static void main(String[] args) throws Exception {
         // reset the security property to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!(Utils.isFIPS())) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
 
         String keyFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +
@@ -238,6 +251,11 @@ public class SSLSocketExplorer {
         String trustFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +
                 "/" + trustStoreFile;
+
+        if (Utils.isFIPS()) {
+            keyFilename = Utils.revertJKSToPKCS12(keyFilename, passwd);
+            trustFilename = Utils.revertJKSToPKCS12(trustFilename, passwd);
+        }
 
         System.setProperty("javax.net.ssl.keyStore", keyFilename);
         System.setProperty("javax.net.ssl.keyStorePassword", passwd);
@@ -252,6 +270,9 @@ public class SSLSocketExplorer {
          */
         parseArguments(args);
 
+        if (supportedProtocols == null || supportedProtocols.length == 0) {
+            return;
+        }
         /*
          * Start the tests.
          */

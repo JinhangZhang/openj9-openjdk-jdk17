@@ -30,6 +30,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
+import java.util.*;
 
 class JSSEClient extends CipherTestUtils.Client {
 
@@ -41,6 +42,8 @@ class JSSEClient extends CipherTestUtils.Client {
     private final int port;
     private final String host;
     private final String protocol;
+
+    private static final Map<String, String> TLS_CIPHERSUITES = new HashMap<>();
 
     JSSEClient(CipherTestUtils cipherTest, String host, int port,
             String protocols, String ciphersuite) throws Exception {

@@ -41,6 +41,9 @@
 import javax.net.ssl.SSLEngine;
 import java.security.Security;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 /**
  * Test common DTLS weak cipher suites.
  */
@@ -52,13 +55,28 @@ public class WeakCipherSuite extends DTLSOverDatagram {
     public static void main(String[] args) throws Exception {
         // reset security properties to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
-        Security.setProperty("jdk.certpath.disabledAlgorithms", "");
+        if (!(Utils.isFIPS())) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+            Security.setProperty("jdk.certpath.disabledAlgorithms", "");
+        }
 
         cipherSuite = args[0];
 
         WeakCipherSuite testCase = new WeakCipherSuite();
-        testCase.runTest(testCase);
+        try {
+            testCase.runTest(testCase);
+        } catch (javax.net.ssl.SSLHandshakeException sslhe) {
+            if (Utils.isFIPS()
+            && !SecurityUtils.TLS_CIPHERSUITES.containsKey(cipherSuite)) {
+                if ("No appropriate protocol (protocol is disabled or cipher suites are inappropriate)".equals(sslhe.getMessage())) {
+                    System.out.println("Expected exception msg: <No appropriate protocol (protocol is disabled or cipher suites are inappropriate)> is caught");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
     }
 
     @Override

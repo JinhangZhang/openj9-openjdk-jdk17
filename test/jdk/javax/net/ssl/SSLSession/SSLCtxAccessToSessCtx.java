@@ -24,6 +24,7 @@
 /*
  * @test
  * @bug 4473210
+ * @library /test/lib
  * @summary SSLSessionContext should be accessible from SSLContext
  * @run main/othervm -Djdk.tls.server.enableSessionTicketExtension=false
  *   SSLCtxAccessToSessCtx
@@ -39,6 +40,9 @@ import javax.net.ssl.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.security.KeyStore;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class SSLCtxAccessToSessCtx  {
 
@@ -172,6 +176,11 @@ public class SSLCtxAccessToSessCtx  {
             System.getProperty("test.src", "./") + "/" + pathToStores +
                 "/" + trustStoreFile;
 
+        if (Utils.isFIPS()) {
+            keyFilename = Utils.revertJKSToPKCS12(keyFilename, passwd);
+            trustFilename = Utils.revertJKSToPKCS12(trustFilename, passwd);
+        }
+
         System.setProperty("javax.net.ssl.keyStore", keyFilename);
         System.setProperty("javax.net.ssl.keyStorePassword", passwd);
         System.setProperty("javax.net.ssl.trustStore", trustFilename);
@@ -180,6 +189,7 @@ public class SSLCtxAccessToSessCtx  {
         sslctx = SSLContext.getInstance("TLS");
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
         KeyStore ks = KeyStore.getInstance("JKS");
+
         ks.load(new FileInputStream(keyFilename), passwd.toCharArray());
         kmf.init(ks, passwd.toCharArray());
         sslctx.init(kmf.getKeyManagers(), null, null);

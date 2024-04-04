@@ -46,19 +46,26 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 /*
  * @test
  * @bug 8206355 8225438
+ * @library /test/lib
  * @summary Test principal that was sent to the peer during handshake.
  * @run main/othervm TestSessionLocalPrincipal
  */
 public class TestSessionLocalPrincipal {
 
     public static void main(String[] args) throws Exception {
-
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
-        for (String tlsProtocol : new String[]{
-            "TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1"}) {
+        String[] protocols = new String[]{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1"};
+        if (!(Utils.isFIPS())) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        } else {
+            protocols = new String[]{"TLSv1.3", "TLSv1.2"};
+        }
+        for (String tlsProtocol : protocols) {
             for (boolean clientAuth : new boolean[]{true, false}) {
                 System.out.printf("Protocol %s: Client side auth enabled: %s%n",
                         tlsProtocol, clientAuth);

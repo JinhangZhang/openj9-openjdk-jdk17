@@ -24,6 +24,7 @@
 /*
  * @test
  * @bug 8042449 8299870
+ * @library /test/lib
  * @library /javax/net/ssl/templates
  * @summary Verify successful handshake ignores invalid record version
  *

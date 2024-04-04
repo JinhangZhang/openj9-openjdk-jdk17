@@ -30,6 +30,7 @@
  * @test
  * @bug 8180643
  * @summary Illegal handshake message
+ * @library /test/lib
  * @run main/othervm IllegalHandshakeMessage
  */
 

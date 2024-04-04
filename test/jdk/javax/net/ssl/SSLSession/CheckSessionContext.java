@@ -70,7 +70,7 @@ public class CheckSessionContext {
         server.close(client1);
         client1.close();
 
-        // Resume the client session
+        // Resume the client session	
         TLSBase.Client client2 = new TLSBase.Client();
         if (server.getSession(client2).getSessionContext() == null) {
             throw new Exception("Context was null on resumption");

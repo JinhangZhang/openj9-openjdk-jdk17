@@ -24,6 +24,7 @@ import java.util.Arrays;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
+import jdk.test.lib.Utils;
 import jdk.test.lib.security.SecurityUtils;
 
 /*
@@ -59,6 +60,12 @@ public class TLSCipherSuitesOrder extends SSLSocketTemplate {
 
     public static void main(String[] args) {
         PROTOCOL protocol = PROTOCOL.valueOf(args[0]);
+        if (Utils.isFIPS()) {
+            if (!SecurityUtils.TLS_PROTOCOLS.contains(args[0])) {
+                System.out.println(args[0] + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
         try {
             new TLSCipherSuitesOrder(protocol.getProtocol(),
                     protocol.getCipherSuite(args[1]),

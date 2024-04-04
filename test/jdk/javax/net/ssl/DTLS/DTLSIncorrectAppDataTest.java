@@ -53,6 +53,9 @@ import javax.net.ssl.SSLException;
 import java.util.Random;
 import jdk.test.lib.RandomFactory;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 /**
  * Testing DTLS incorrect app data packages unwrapping. Incorrect application
  * data packages should be ignored by DTLS SSLEngine.
@@ -63,7 +66,9 @@ public class DTLSIncorrectAppDataTest extends SSLEngineTestCase {
 
     public static void main(String[] s) {
         DTLSIncorrectAppDataTest test = new DTLSIncorrectAppDataTest();
-        setUpAndStartKDCIfNeeded();
+        if (Utils.isFIPS()) {
+                setUpAndStartKDCIfNeeded();
+        }
         test.runTests();
     }
 

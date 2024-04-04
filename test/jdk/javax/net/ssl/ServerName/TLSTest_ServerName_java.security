@@ -1,0 +1,29 @@
+# Test-TLS Restricted Security mode profile for FIPS 140-3. This profile is a test profile that extends
+# OpenJCEPlusFIPS.FIPS140-3. This profile also includes non-cryptographic algorithms and common configuration
+# options such as, PKCS12, JKS from SUN and PBE related services from SunJCE.
+#
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS-ServerName.desc.name = Test-TLS-ServerName OpenJCEPlusFIPS Cryptographic Module FIPS 140-3
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS-ServerName.desc.default = false
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS-ServerName.extends = RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3
+
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS-ServerName.jce.provider.1 = com.ibm.crypto.plus.provider.OpenJCEPlusFIPS [+ \
+    {AlgorithmParameters, DiffieHellman, *}, \
+    {KeyAgreement, DiffieHellman, *}, \
+    {KeyPairGenerator, DiffieHellman, *}, \
+    {KeyFactory, DiffieHellman, *}, \
+    {MessageDigest, MD5, *}]
+
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS-ServerName.jce.provider.2 = sun.security.provider.Sun [+ \
+    {KeyStore, JKS, *}, \
+    {KeyStore, PKCS12, *}, \
+    {MessageDigest, SHA-1, *}]
+
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS-ServerName.jce.provider.4 = com.sun.crypto.provider.SunJCE [{AlgorithmParameters, PBES2, *}, \
+    {AlgorithmParameters, PBEWithHmacSHA256AndAES_256, *}, \
+    {AlgorithmParameters, PBEWithMD5AndDES, *}, \
+    {SecretKeyFactory, PBEWithMD5AndDES, *}, \
+    {Cipher, PBEWithHmacSHA256AndAES_256, *}, \
+    {Mac, HmacSHA1, *},\
+    {Mac, HmacPBESHA256, *}]
+
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS-ServerName.jce.provider.5 = sun.security.rsa.SunRsaSign [{Signature, MD5withRSA, *}]

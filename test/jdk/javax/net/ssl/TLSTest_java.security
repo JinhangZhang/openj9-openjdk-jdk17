@@ -1,0 +1,20 @@
+# Test-TLS Restricted Security mode profile for FIPS 140-3. This profile is a test profile that extends
+# OpenJCEPlusFIPS.FIPS140-3. This profile also includes non-cryptographic algorithms and common configuration
+# options such as, PKCS12, JKS from SUN and PBE related services from SunJCE.
+#
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS.desc.name = Test-TLS OpenJCEPlusFIPS Cryptographic Module FIPS 140-3
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS.desc.default = false
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS.extends = RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3
+
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS.jce.provider.2 = sun.security.provider.Sun [+ \
+    {KeyStore, JKS, *}, \
+    {KeyStore, PKCS12, *}, \
+    {MessageDigest, SHA-1, *}]
+
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3-Test-TLS.jce.provider.4 = com.sun.crypto.provider.SunJCE [{AlgorithmParameters, PBES2, *}, \
+    {AlgorithmParameters, PBEWithHmacSHA256AndAES_256, *}, \
+    {AlgorithmParameters, PBEWithMD5AndDES, *}, \
+    {SecretKeyFactory, PBEWithMD5AndDES, *}, \
+    {Cipher, PBEWithHmacSHA256AndAES_256, *}, \
+    {Mac, HmacSHA1, *},\
+    {Mac, HmacPBESHA256, *}]

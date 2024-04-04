@@ -35,6 +35,7 @@
  * @test
  * @bug 8247630
  * @summary Use two key share entries
+ * @library /test/lib
  * @run main/othervm ClientHelloKeyShares 29 23
  * @run main/othervm -Djdk.tls.namedGroups=secp384r1,secp521r1,x448,ffdhe2048 ClientHelloKeyShares 24 30
  * @run main/othervm -Djdk.tls.namedGroups=brainpoolP512r1tls13,x448,ffdhe2048 ClientHelloKeyShares 33 30
@@ -50,6 +51,8 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class ClientHelloKeyShares {
 
@@ -69,9 +72,28 @@ public class ClientHelloKeyShares {
         // values which will be the expected NamedGroup IDs in the key_share
         // extension.  Expected named group assertions may also be affected
         // by setting the jdk.tls.namedGroups System property.
+
         List<Integer> expectedKeyShares = new ArrayList<>();
         Arrays.stream(args).forEach(arg ->
                 expectedKeyShares.add(Integer.valueOf(arg)));
+        if (Utils.isFIPS()) {
+            expectedKeyShares.clear();
+            Map<String, Integer> supportKeyShares = new HashMap<>();
+            supportKeyShares.put("secp256r1", 23);
+            supportKeyShares.put("secp384r1", 24);
+            supportKeyShares.put("secp521r1", 25);
+
+            if (System.getProperty("jdk.tls.namedGroups") == null) {
+                expectedKeyShares.add(23);
+            } else {
+                for (String nameGroup: System.getProperty("jdk.tls.namedGroups").split(",")) {
+                    if (supportKeyShares.containsKey(nameGroup)) {
+                        expectedKeyShares.add(supportKeyShares.get(nameGroup));
+                        break;
+                    }
+                }
+            }
+        }
 
         SSLContext sslCtx = SSLContext.getDefault();
         SSLEngine engine = sslCtx.createSSLEngine();
@@ -82,7 +104,19 @@ public class ClientHelloKeyShares {
                 ByteBuffer.allocateDirect(session.getPacketBufferSize());
 
         // Create and check the ClientHello message
-        SSLEngineResult clientResult = engine.wrap(clientOut, cTOs);
+        SSLEngineResult clientResult = null;
+        try {
+            clientResult = engine.wrap(clientOut, cTOs);
+        } catch (java.lang.ExceptionInInitializerError eiie) {
+            Throwable cause = eiie.getCause();
+            if (cause instanceof java.lang.IllegalArgumentException) {
+                if (Utils.isFIPS() 
+                && ("System property jdk.tls.namedGroups(" + System.getProperty("jdk.tls.namedGroups") + ") contains no supported named groups").equals(cause.getMessage())) {
+                    System.out.println("Expected msg is caught.");
+                    return;
+                }
+            }
+        }
         logResult("client wrap: ", clientResult);
         if (clientResult.getStatus() != SSLEngineResult.Status.OK) {
             throw new RuntimeException("Client wrap got status: " +
@@ -155,6 +189,7 @@ public class ClientHelloKeyShares {
         int ver_major = Byte.toUnsignedInt(data.get());
         int ver_minor = Byte.toUnsignedInt(data.get());
         int recLen = Short.toUnsignedInt(data.getShort());
+        System.out.println("TLS record header length: " + recLen);
 
         // Simple sanity checks
         if (type != 22) {
@@ -169,6 +204,7 @@ public class ClientHelloKeyShares {
         int msgHdr = data.getInt();
         int msgType = (msgHdr >> 24) & 0x000000FF;
         int msgLen = msgHdr & 0x00FFFFFF;
+        System.out.println("handshake message header length: " + msgLen);
 
         // More simple sanity checks
         if (msgType != 1) {
@@ -181,18 +217,21 @@ public class ClientHelloKeyShares {
         // Jump past the session ID (if there is one)
         int sessLen = Byte.toUnsignedInt(data.get());
         if (sessLen != 0) {
+            System.out.println("session ID is not null, length is: " + sessLen);
             data.position(data.position() + sessLen);
         }
 
         // Jump past the cipher suites
         int csLen = Short.toUnsignedInt(data.getShort());
         if (csLen != 0) {
+            System.out.println("cipher suites ID is not null, length is: " + csLen);
             data.position(data.position() + csLen);
         }
 
         // ...and the compression
         int compLen = Byte.toUnsignedInt(data.get());
         if (compLen != 0) {
+            System.out.println("compression is not null, length is: " + compLen);
             data.position(data.position() + compLen);
         }
 
@@ -202,22 +241,26 @@ public class ClientHelloKeyShares {
         boolean foundSupVer = false;
         boolean foundKeyShare = false;
         int extsLen = Short.toUnsignedInt(data.getShort());
+        System.out.println("extsLen is: " + extsLen);
         List<Integer> supGrpList = new ArrayList<>();
         List<Integer> chKeyShares = new ArrayList<>();
         while (data.hasRemaining()) {
             int extType = Short.toUnsignedInt(data.getShort());
             int extLen = Short.toUnsignedInt(data.getShort());
             boolean foundTLS13 = false;
+            System.out.println("extension type is: " + extType);
             switch (extType) {
                 case HELLO_EXT_SUPP_GROUPS:
+                    System.out.println("This extType is HELLO_EXT_SUPP_GROUPS. extension type is: " + extType);
                     int supGrpLen = Short.toUnsignedInt(data.getShort());
                     for (int remain = supGrpLen; remain > 0; remain -= 2) {
                         supGrpList.add(Short.toUnsignedInt(data.getShort()));
                     }
                     break;
                 case HELLO_EXT_SUPP_VERS:
+                    System.out.println("This extType is HELLO_EXT_SUPP_VERS. extension type is: " + extType);
                     foundSupVer = true;
-                    int supVerLen = Byte.toUnsignedInt(data.get());
+                    int supVerLen = Byte.toUnsignedInt(data.get()); // 04 
                     for (int remain = supVerLen; remain > 0; remain -= 2) {
                         foundTLS13 |= (Short.toUnsignedInt(data.getShort()) ==
                                 TLS_PROT_VER_13);
@@ -229,13 +272,18 @@ public class ClientHelloKeyShares {
                     }
                     break;
                 case HELLO_EXT_KEY_SHARE:
+                    System.out.println("This extType is HELLO_EXT_KEY_SHARE. extension type is: " + extType);
                     foundKeyShare = true;
                     int ksListLen = Short.toUnsignedInt(data.getShort());
+                    System.out.println("ksListLen before while-loop is: " + ksListLen);
                     while (ksListLen > 0) {
-                        chKeyShares.add(Short.toUnsignedInt(data.getShort()));
+                        int ks = Short.toUnsignedInt(data.getShort());
+                        System.out.println("keyshare is: " + ks);
+                        chKeyShares.add(ks);
                         int ksLen = Short.toUnsignedInt(data.getShort());
                         data.position(data.position() + ksLen);
                         ksListLen -= (4 + ksLen);
+                        System.out.println("ksListLen is: " + ksListLen);
                     }
                     break;
                 default:

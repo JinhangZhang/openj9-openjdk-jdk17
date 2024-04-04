@@ -26,7 +26,7 @@
  * @bug 4981697
  * @summary Rework the X509KeyManager to avoid incompatibility issues
  * @author Brad R. Wetmore
- *
+ * @library /test/lib
  * @run main/othervm -Djdk.tls.acknowledgeCloseNotify=true ExtendedKeyEngine
  */
 
@@ -35,6 +35,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class ExtendedKeyEngine {
 
