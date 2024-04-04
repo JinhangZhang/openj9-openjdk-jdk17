@@ -226,8 +226,10 @@ public class TestAllSuites {
         }
 
         switch(args[0]) {
-            case "TLSv1.1" -> SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
-            case "TLSv1.3" -> SecurityUtils.addToDisabledTlsAlgs("TLSv1.2");
+            if (!NetSslUtils.isFIPS_140_3()) {
+                case "TLSv1.1" -> SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
+                case "TLSv1.3" -> SecurityUtils.addToDisabledTlsAlgs("TLSv1.2");
+            }
         }
 
         TestAllSuites testAllSuites = new TestAllSuites(args[0]);
@@ -255,8 +257,16 @@ public class TestAllSuites {
     private SSLContext getSSLContext(String keyFile, String trustFile)
             throws Exception {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        KeyStore ts;
+
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+            ts = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+            ts = KeyStore.getInstance("PKCS12");
+        }
 
         char[] passphrase = "passphrase".toCharArray();
 

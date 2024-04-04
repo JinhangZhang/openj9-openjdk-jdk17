@@ -221,8 +221,17 @@ public class Arrays {
     private SSLContext getSSLContext(String keyFile, String trustFile)
             throws Exception {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
+        
+        KeyStore ks;
+        KeyStore ts;
+
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+            ts = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+            ts = KeyStore.getInstance("PKCS12");
+        }
 
         char[] passphrase = "passphrase".toCharArray();
 

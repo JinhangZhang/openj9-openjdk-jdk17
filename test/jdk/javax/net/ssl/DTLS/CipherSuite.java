@@ -61,10 +61,15 @@ public class CipherSuite extends DTLSOverDatagram {
     volatile static String cipherSuite;
 
     public static void main(String[] args) throws Exception {
-        if (args.length > 1 && "re-enable".equals(args[1])) {
-            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            if (args.length > 1 && "re-enable".equals(args[1])) {
+                Security.setProperty("jdk.tls.disabledAlgorithms", "");
+            }
         }
 
+        if (!NetSslUtils.TLS_CIPHERSUITES.contains(args[0])) {
+            return;
+        }
         cipherSuite = args[0];
 
         CipherSuite testCase = new CipherSuite();

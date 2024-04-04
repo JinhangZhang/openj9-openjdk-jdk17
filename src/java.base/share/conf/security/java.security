@@ -201,8 +201,15 @@ RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3.jce.provider.2 = SUN [{CertificateF
     {CertStore, Collection, ImplementedIn=Software}, \
     {CertStore, com.sun.security.IndexedCollection, ImplementedIn=Software}, \
     {Configuration, JavaLoginConfig, *}, \
+    {KeyStore, PKCS12, *}, \
     {Policy, JavaPolicy, *}]
 RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3.jce.provider.3 = SunJSSE
+RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3.jce.provider.4 = SunJCE [{AlgorithmParameters, PBES2, *}, \
+    {AlgorithmParameters, PBEWithHmacSHA256AndAES_256, *}, \
+    {SecretKeyFactory, PBEWithMD5AndDES, *}, \
+    {SecretKeyFactory, PBKDF2WithHmacSHA256, *}, \
+    {Cipher, PBEWithHmacSHA256AndAES_256, *}, \
+    {Mac, HmacPBESHA256, *}]
 RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3.javax.net.ssl.keyStore = NONE
 RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3.securerandom.provider = OpenJCEPlusFIPS
 RestrictedSecurity.OpenJCEPlusFIPS.FIPS140-3.securerandom.algorithm = SHA512DRBG

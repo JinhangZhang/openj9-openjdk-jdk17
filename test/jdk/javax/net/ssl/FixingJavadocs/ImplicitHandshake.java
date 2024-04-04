@@ -149,6 +149,13 @@ public class ImplicitHandshake {
          */
         sslSocket.setUseClientMode(false);
 
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         System.out.println("Using Implicit handshake, ciphersuite is: " +
             sslSocket.getSession().getCipherSuite());
 
