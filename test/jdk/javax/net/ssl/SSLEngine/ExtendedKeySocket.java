@@ -89,10 +89,18 @@ public class ExtendedKeySocket {
     SSLContext getSSLContext(boolean abs) throws Exception {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
-        KeyStore keyKS = KeyStore.getInstance("JKS");
-        keyKS.load(new FileInputStream(keyFilename), passwd);
+        KeyStore keyKS;
+        KeyStore trustKS;
 
-        KeyStore trustKS = KeyStore.getInstance("JKS");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            keyKS = KeyStore.getInstance("JKS");
+            trustKS = KeyStore.getInstance("JKS");
+        } else {
+            keyKS = KeyStore.getInstance("PKCS12");
+            trustKS = KeyStore.getInstance("PKCS12");
+        }
+
+        keyKS.load(new FileInputStream(keyFilename), passwd);
         trustKS.load(new FileInputStream(trustFilename), passwd);
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");

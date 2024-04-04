@@ -137,6 +137,7 @@ public class SSLSessionFinalizeTest {
         try {
                 SSLSocket sslSocket = (SSLSocket)
                     sslsf.createSocket("localhost", serverPort);
+
                 InputStream sslIS = sslSocket.getInputStream();
                 OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -185,6 +186,10 @@ public class SSLSessionFinalizeTest {
     volatile Exception clientException = null;
 
     public static void main(String[] args) throws Exception {
+        if (NetSslUtils.isFIPS_140_3()) {
+            keyStoreFile = "keystore.p12";
+            trustStoreFile = "truststore.p12";
+        }
         String keyFilename =
             System.getProperty("test.src", "./") + "/" + pathToStores +
                 "/" + keyStoreFile;

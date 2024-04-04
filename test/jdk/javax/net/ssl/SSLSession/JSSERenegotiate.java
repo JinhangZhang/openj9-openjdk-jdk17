@@ -112,6 +112,13 @@ public class JSSERenegotiate {
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
 
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         DataInputStream sslIS =
             new DataInputStream(sslSocket.getInputStream());
         DataOutputStream sslOS =
@@ -153,6 +160,13 @@ public class JSSERenegotiate {
         sslSocket.setEnabledCipherSuites(new String[] { suite1 });
         System.out.println("Enabled " + suite1);
 
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         DataInputStream sslIS =
             new DataInputStream(sslSocket.getInputStream());
         DataOutputStream sslOS =
@@ -193,7 +207,9 @@ public class JSSERenegotiate {
     public static void main(String[] args) throws Exception {
         // reset the security property to make sure that the cipher suites
         // used in this test are not disabled
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
 
         String keyFilename =
             System.getProperty("test.src", "./") + "/" + pathToStores +

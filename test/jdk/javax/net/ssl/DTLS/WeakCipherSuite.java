@@ -52,11 +52,18 @@ public class WeakCipherSuite extends DTLSOverDatagram {
     public static void main(String[] args) throws Exception {
         // reset security properties to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
-        Security.setProperty("jdk.certpath.disabledAlgorithms", "");
-
-        cipherSuite = args[0];
-
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+            Security.setProperty("jdk.certpath.disabledAlgorithms", "");
+            cipherSuite = args[0];
+        } else {
+            if (NetSslUtils.TLS_CIPHERSUITES.contains(args[0])) {
+                cipherSuite = args[0];
+            }
+        }
+        if (cipherSuite == null) {
+            return;
+        }
         WeakCipherSuite testCase = new WeakCipherSuite();
         testCase.runTest(testCase);
     }

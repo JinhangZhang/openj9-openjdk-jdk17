@@ -89,7 +89,25 @@ public class TestAllSuites {
     }
 
     private void test() throws Exception {
-        String [] suites = clientEngine.getEnabledCipherSuites();
+        List<String> tmpCipherSuites = new ArrayList<>();
+        String [] suites;
+        if (NetSslUtils.isFIPS_140_3()) {
+            for (String ciphersuite : clientEngine.getEnabledCipherSuites()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.containsKey(ciphersuite)) {
+                    continue;
+                }
+                if (!NetSslUtils.TLS_CIPHERSUITES.get(ciphersuite).equals(PROTOCOL)) {
+                    continue;
+                }
+                tmpCipherSuites.add(ciphersuite);
+            }
+            if (tmpCipherSuites.size() == 0) {
+                return;
+            }
+            suites = tmpCipherSuites.toArray(new String[0]);
+        } else {
+            suites = clientEngine.getEnabledCipherSuites();
+        }
         System.out.println("Enabled cipher suites for protocol " + PROTOCOL +
                 ": " + Arrays.toString(suites));
         for (String suite: suites){
@@ -224,10 +242,15 @@ public class TestAllSuites {
         if (args.length < 1) {
             throw new RuntimeException("Missing TLS protocol parameter.");
         }
-
-        switch(args[0]) {
-            case "TLSv1.1" -> SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
-            case "TLSv1.3" -> SecurityUtils.addToDisabledTlsAlgs("TLSv1.2");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            switch(args[0]) {
+                case "TLSv1.1" -> SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
+                case "TLSv1.3" -> SecurityUtils.addToDisabledTlsAlgs("TLSv1.2");
+            }
+        } else {
+            if (!NetSslUtils.TLS_PROTOCOLS.contains(args[0])) {
+                return;
+            }
         }
 
         TestAllSuites testAllSuites = new TestAllSuites(args[0]);
@@ -255,8 +278,16 @@ public class TestAllSuites {
     private SSLContext getSSLContext(String keyFile, String trustFile)
             throws Exception {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        KeyStore ts;
+
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+            ts = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+            ts = KeyStore.getInstance("PKCS12");
+        }
 
         char[] passphrase = "passphrase".toCharArray();
 

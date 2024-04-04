@@ -36,7 +36,9 @@ public class BufferOverflowUnderflowTest extends SSLEngineTestCase {
 
     public static void main(String[] args) {
         BufferOverflowUnderflowTest test = new BufferOverflowUnderflowTest();
-        setUpAndStartKDCIfNeeded();
+        if (!NetSslUtils.isFIPS_140_3()) {
+            setUpAndStartKDCIfNeeded();
+        }
         test.runTests();
     }
 

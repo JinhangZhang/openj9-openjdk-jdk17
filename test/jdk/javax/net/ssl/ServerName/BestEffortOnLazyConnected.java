@@ -104,6 +104,14 @@ public class BestEffortOnLazyConnected {
             serverReady = true;
 
             try (SSLSocket sslSocket = (SSLSocket)sslServerSocket.accept()) {
+
+                if (NetSslUtils.isFIPS_140_3()) {
+                    if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                        System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                        return;
+                    }
+                }
+
                 InputStream sslIS = sslSocket.getInputStream();
                 OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -141,6 +149,13 @@ public class BestEffortOnLazyConnected {
         try (SSLSocket sslSocket = (SSLSocket)sslsf.createSocket()) {
 
             sslSocket.connect(new InetSocketAddress(hostname, serverPort), 0);
+
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                    System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
+            }
 
             InputStream sslIS = sslSocket.getInputStream();
             OutputStream sslOS = sslSocket.getOutputStream();

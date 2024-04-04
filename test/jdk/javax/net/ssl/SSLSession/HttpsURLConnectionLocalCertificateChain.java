@@ -210,8 +210,8 @@ public class HttpsURLConnectionLocalCertificateChain
         System.out.println("Client setting up URL/connecting...");
         myURLc = (HttpsURLConnection) myURL.openConnection();
         myURLc.setHostnameVerifier(this);
-        myURLc.connect();
 
+        myURLc.connect();
         InputStream sslIS = myURLc.getInputStream();
 
         System.out.println("Client reading...");
@@ -238,6 +238,10 @@ public class HttpsURLConnectionLocalCertificateChain
     volatile Exception clientException = null;
 
     public static void main(String[] args) throws Exception {
+        if (NetSslUtils.isFIPS_140_3()) {
+            keyStoreFile = "keystore.p12";
+            trustStoreFile = "truststore.p12";
+        }
         String keyFilename =
             System.getProperty("test.src", "./") + "/" + pathToStores +
                 "/" + keyStoreFile;

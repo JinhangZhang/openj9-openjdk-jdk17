@@ -51,6 +51,20 @@ public class CheckSessionContext {
 
         // Initial client session
         TLSBase.Client client1 = new TLSBase.Client();
+
+        // Resume the client session
+        TLSBase.Client client2 = new TLSBase.Client();
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(server.getSession(client1).getCipherSuite())) {
+                System.out.println(server.getSession(client1).getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(server.getSession(client2).getCipherSuite())) {
+                System.out.println(server.getSession(client2).getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         if (server.getSession(client1).getSessionContext() == null) {
             throw new Exception("Context was null");
         } else {
@@ -70,8 +84,6 @@ public class CheckSessionContext {
         server.close(client1);
         client1.close();
 
-        // Resume the client session
-        TLSBase.Client client2 = new TLSBase.Client();
         if (server.getSession(client2).getSessionContext() == null) {
             throw new Exception("Context was null on resumption");
         } else {

@@ -32,7 +32,9 @@ public class TestJSSE {
     public static void main(String... args) throws Exception {
         // reset the security property to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
 
         // enable debug output
         System.setProperty("javax.net.debug", "ssl,record");
@@ -42,6 +44,21 @@ public class TestJSSE {
         String cipher = System.getProperty("CIPHER");
         if (srvProtocol == null || clnProtocol == null || cipher == null) {
             throw new IllegalArgumentException("Incorrect parameters");
+        }
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_PROTOCOLS.contains(srvProtocol)){
+                System.out.println(srvProtocol + " is not supported in FIPS 140-3.");
+                return;
+            }
+            if (!NetSslUtils.TLS_PROTOCOLS.contains(clnProtocol)) {
+                System.out.println(clnProtocol + " is not supported in FIPS 140-3.");
+                return;
+            }
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(cipher)) {
+                System.out.println(cipher + " is not supported in FIPS 140-3.");
+                return;
+            }
         }
 
         System.out.println("ServerProtocol = " + srvProtocol);

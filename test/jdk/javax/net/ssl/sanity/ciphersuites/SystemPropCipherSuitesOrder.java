@@ -20,7 +20,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-import java.util.Arrays;
+import java.util.*;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
@@ -81,13 +81,35 @@ public class SystemPropCipherSuitesOrder extends SSLSocketTemplate {
     private static String[] clientcipherSuites;
 
     public static void main(String[] args) {
-        servercipherSuites
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_PROTOCOLS.contains(args[0])) {
+                System.out.println(args[0] + " is not supported in FIPS 140-3.");
+                return;
+            }
+            List<String> tmpClient = new ArrayList<>();
+            for (String clientcipherSuite : toArray(System.getProperty("jdk.tls.client.cipherSuites"))) {
+                if (NetSslUtils.TLS_PROTOCOLS.contains(clientcipherSuite)) {
+                    tmpClient.add(clientcipherSuite);
+                }
+            }
+            List<String> tmpServer = new ArrayList<>();
+            for (String servercipherSuite : toArray(System.getProperty("jdk.tls.server.cipherSuites"))) {
+                if (NetSslUtils.TLS_PROTOCOLS.contains(servercipherSuite)) {
+                    tmpServer.add(servercipherSuite);
+                }
+            }
+            servercipherSuites = tmpServer.toArray(new String[0]);
+            clientcipherSuites = tmpClient.toArray(new String[0]);
+        } else {
+            servercipherSuites
                 = toArray(System.getProperty("jdk.tls.server.cipherSuites"));
-        clientcipherSuites
+            clientcipherSuites
                 = toArray(System.getProperty("jdk.tls.client.cipherSuites"));
+        }
         System.out.printf("SYSTEM PROPERTIES: ServerProp:%s - ClientProp:%s%n",
-                Arrays.deepToString(servercipherSuites),
-                Arrays.deepToString(clientcipherSuites));
+        Arrays.deepToString(servercipherSuites),
+        Arrays.deepToString(clientcipherSuites));
 
         try {
             new SystemPropCipherSuitesOrder(args[0]).run();
@@ -100,7 +122,9 @@ public class SystemPropCipherSuitesOrder extends SSLSocketTemplate {
         this.protocol = protocol;
         // Re-enable protocol if disabled.
         if (protocol.equals("TLSv1") || protocol.equals("TLSv1.1")) {
-            SecurityUtils.removeFromDisabledTlsAlgs(protocol);
+            if (!NetSslUtils.isFIPS_140_3()) {
+                SecurityUtils.removeFromDisabledTlsAlgs(protocol);
+            }
         }
     }
 

@@ -59,6 +59,12 @@ public class TLSCipherSuitesOrder extends SSLSocketTemplate {
 
     public static void main(String[] args) {
         PROTOCOL protocol = PROTOCOL.valueOf(args[0]);
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_PROTOCOLS.contains(protocol)) {
+                System.out.println(protocol + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
         try {
             new TLSCipherSuitesOrder(protocol.getProtocol(),
                     protocol.getCipherSuite(args[1]),
@@ -72,7 +78,9 @@ public class TLSCipherSuitesOrder extends SSLSocketTemplate {
             String[] servercipherSuites) {
         // Re-enable protocol if it is disabled.
         if (protocol.equals("TLSv1") || protocol.equals("TLSv1.1")) {
-            SecurityUtils.removeFromDisabledTlsAlgs(protocol);
+            if (!NetSslUtils.isFIPS_140_3()) {
+                SecurityUtils.removeFromDisabledTlsAlgs(protocol);
+            }
         }
         this.protocol = protocol;
         this.clientcipherSuites = clientcipherSuites;

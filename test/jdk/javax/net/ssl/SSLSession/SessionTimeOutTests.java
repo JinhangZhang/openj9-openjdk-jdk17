@@ -139,6 +139,14 @@ public class SessionTimeOutTests {
                         "No incoming client connection. Ignore in server side.");
                 continue;
             }
+
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                    System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
+            }
+
             InputStream sslIS = sslSocket.getInputStream();
             OutputStream sslOS = sslSocket.getOutputStream();
             sslIS.read();
@@ -189,6 +197,13 @@ public class SessionTimeOutTests {
                 System.out.println(
                         "Cannot make a connection in time. Ignore in client side.");
                 continue;
+            }
+
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSockets[nConnections].getSession().getCipherSuite())) {
+                    System.out.println(sslSockets[nConnections].getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
             }
 
             InputStream sslIS = sslSockets[nConnections].getInputStream();
@@ -342,7 +357,13 @@ public class SessionTimeOutTests {
 
         sslctx = SSLContext.getInstance("TLS");
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+        }
+
         ks.load(new FileInputStream(keyFilename), passwd.toCharArray());
         kmf.init(ks, passwd.toCharArray());
         sslctx.init(kmf.getKeyManagers(), null, null);

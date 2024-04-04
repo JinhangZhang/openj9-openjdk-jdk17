@@ -115,6 +115,14 @@ public class GenericBlockCipher {
         serverReady = true;
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -145,12 +153,21 @@ public class GenericBlockCipher {
         SSLSocket sslSocket = (SSLSocket)
             sslsf.createSocket("localhost", serverPort);
 
-        // enable TLSv1.1 only
-        sslSocket.setEnabledProtocols(new String[] {"TLSv1.1"});
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
 
-        // enable a block cipher
-        sslSocket.setEnabledCipherSuites(
-            new String[] {"TLS_RSA_WITH_AES_128_CBC_SHA"});
+        if (!NetSslUtils.isFIPS_140_3()) {
+            // enable TLSv1.1 only
+            sslSocket.setEnabledProtocols(new String[] {"TLSv1.1"});
+
+            // enable a block cipher
+            sslSocket.setEnabledCipherSuites(
+                new String[] {"TLS_RSA_WITH_AES_128_CBC_SHA"});
+        }
 
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
@@ -175,7 +192,9 @@ public class GenericBlockCipher {
 
     public static void main(String[] args) throws Exception {
         // Re-enable TLSv1.1 since test depends on it.
-        SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
+        }
 
         String keyFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +
