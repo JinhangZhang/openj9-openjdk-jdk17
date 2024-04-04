@@ -150,20 +150,27 @@ public class ClientExcOnAlert {
         Thread.currentThread().setName("ServerThread");
         SSLContext sslc = SSLContext.getInstance("TLS");
         log("doServerSide start");
+        System.out.println("<1>");
         KeyManagerFactory kmf = createKeyManagerFactory(KEYSTORE_PEM,
                 KEYSTORE_PASS);
+        System.out.println("<2>");        
         sslc.init(kmf.getKeyManagers(), null, null);
+        System.out.println("<3>");
         SSLServerSocketFactory ssf =
                 (SSLServerSocketFactory)sslc.getServerSocketFactory();
-
+        System.out.println("<4>");
         try (SSLServerSocket sslServerSocket =
                 (SSLServerSocket)ssf.createServerSocket(0)) {
+            System.out.println("<5>");
             sslServerSocket.setReuseAddress(true);
             // Set the server port and wake up the client thread who is waiting
             // for the port to be set.
+            System.out.println("<6>");
             lock.lock();
+            System.out.println("<7>");
             try {
                 serverPort = sslServerSocket.getLocalPort();
+                System.out.println("<8>");
                 log("Server listening on port %d", serverPort);
                 serverReady.signalAll();
                 log("Server ready");
@@ -173,6 +180,7 @@ public class ClientExcOnAlert {
 
             // Go into the accept wait state until the client initiates the
             // TLS handshake.
+            System.out.println("<9>");
             try (SSLSocket sslSocket = (SSLSocket)sslServerSocket.accept();
                     PrintWriter pw =
                         new PrintWriter(sslSocket.getOutputStream());
@@ -192,15 +200,23 @@ public class ClientExcOnAlert {
             String ksPem, String ksAuth) throws IOException,
             GeneralSecurityException {
         KeyManagerFactory kmf = null;
+        System.out.println("<1-1>");
         if (ksPem != null && ksAuth != null) {
+            System.out.println("<1-2>");
             Base64.Decoder b64dec = Base64.getMimeDecoder();
+            System.out.println("<1-3>");
             ByteArrayInputStream bais =
                     new ByteArrayInputStream(b64dec.decode(ksPem));
+            System.out.println("<1-4>");
             KeyStore ks = KeyStore.getInstance("PKCS12");
+            System.out.println("<1-5>");
             char[] ksPass = ksAuth.toCharArray();
+            System.out.println("<1-6>");
             ks.load(bais, ksPass);
+            System.out.println("<1-7>");
 
             kmf = KeyManagerFactory.getInstance("PKIX");
+            System.out.println("<1-8>");
             kmf.init(ks, ksAuth.toCharArray());
         }
 

@@ -56,9 +56,13 @@ public class TestSessionLocalPrincipal {
 
     public static void main(String[] args) throws Exception {
 
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
-        for (String tlsProtocol : new String[]{
-            "TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1"}) {
+        String[] tlsProtocols = null;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+            tlsProtocols = new String[]{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1"};
+        }
+        tlsProtocols = new String[]{"TLSv1.3", "TLSv1.2"};
+        for (String tlsProtocol : tlsProtocols) {
             for (boolean clientAuth : new boolean[]{true, false}) {
                 System.out.printf("Protocol %s: Client side auth enabled: %s%n",
                         tlsProtocol, clientAuth);

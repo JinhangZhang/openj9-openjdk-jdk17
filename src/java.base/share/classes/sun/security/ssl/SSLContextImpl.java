@@ -909,9 +909,13 @@ public abstract class SSLContextImpl extends SSLContextSpi {
             Exception reserved = null;
             TrustManager[] tmMediator = null;
             try {
+                System.out.println("start getTrustManagers in DefaultManagersHolder.");
                 tmMediator = getTrustManagers();
             } catch (Exception e) {
+                System.out.println("start getTrustManagers in DefaultManagersHolder but failed");
                 reserved = e;
+                System.out.println("Exception message is: ");
+                reserved.printStackTrace();
                 if (SSLLogger.isOn && SSLLogger.isOn("ssl,defaultctx")) {
                     SSLLogger.warning(
                             "Failed to load default trust managers", e);
@@ -920,6 +924,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
 
             KeyManager[] kmMediator = null;
             if (reserved == null) {
+                System.out.println("reserved is null");
                 try {
                     kmMediator = getKeyManagers();
                 } catch (Exception e) {
@@ -932,6 +937,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
             }
 
             if (reserved != null) {
+                System.out.println("reserved is not null");
                 trustManagers = new TrustManager[0];
                 keyManagers = new KeyManager[0];
 
@@ -951,14 +957,17 @@ public abstract class SSLContextImpl extends SSLContextSpi {
         private static TrustManager[] getTrustManagers() throws Exception {
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(
                     TrustManagerFactory.getDefaultAlgorithm());
+            System.out.println("The TrustManagerFactory provider is: " + tmf.getProvider().getName());
             if ("SunJSSE".equals(tmf.getProvider().getName())) {
                 // The implementation will load the default KeyStore
                 // automatically.  Cached trust materials may be used
                 // for performance improvement.
+                System.out.println("It's SunJSSE.");
                 tmf.init((KeyStore)null);
             } else {
                 // Use the explicitly specified KeyStore for third party's
                 // TrustManagerFactory implementation.
+                System.out.println("It's not SunJSSE.");
                 KeyStore ks = TrustStoreManager.getTrustedKeyStore();
                 tmf.init(ks);
             }

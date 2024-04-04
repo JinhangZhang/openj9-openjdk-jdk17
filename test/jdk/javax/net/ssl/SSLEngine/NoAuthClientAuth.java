@@ -140,13 +140,21 @@ public class NoAuthClientAuth {
      * Main entry point for this test.
      */
     public static void main(String args[]) throws Exception {
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+            tlsProtocol = args[0];
+        } else {
+            if (NetSslUtils.TLS_PROTOCOLS.contains(args[0])) {
+                tlsProtocol = args[0];
+            }
+        }
+        if (tlsProtocol == null) {
+            return;
+        }
 
         if (debug) {
             System.setProperty("javax.net.debug", "all");
         }
-
-        tlsProtocol = args[0];
 
         NoAuthClientAuth test = new NoAuthClientAuth();
         test.runTest();
@@ -159,8 +167,16 @@ public class NoAuthClientAuth {
      */
     public NoAuthClientAuth() throws Exception {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        KeyStore ts;
+
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+            ts = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+            ts = KeyStore.getInstance("PKCS12");
+        }
 
         char[] passphrase = "passphrase".toCharArray();
 

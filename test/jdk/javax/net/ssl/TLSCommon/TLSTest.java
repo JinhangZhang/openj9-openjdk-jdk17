@@ -31,9 +31,11 @@ import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
+import java.security.Provider;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -148,7 +150,18 @@ public class TLSTest {
         final String tlsProtocol = args[0];
         final KeyType keyType = KeyType.valueOf(args[1]);
         final String cipher = args[2];
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
+        if (tlsProtocol.equals("TLSv1") || tlsProtocol.equals("TLSv1.1")) {
+            return;
+        }
+        if (args[1].contains("sha1")) {
+            return;
+        }
+        if (NetSslUtils.TLS_PROTOCOLS.contains(tlsProtocol) && !NetSslUtils.TLS_PROTOCOLS.contains(cipher)) {
+            return;
+        }
         CountDownLatch serverReady = new CountDownLatch(1);
         Server server = new Server(tlsProtocol, keyType, cipher, serverReady);
         server.start();

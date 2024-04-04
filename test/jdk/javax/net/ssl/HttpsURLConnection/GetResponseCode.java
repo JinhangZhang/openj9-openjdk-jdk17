@@ -97,6 +97,7 @@ public class GetResponseCode implements HostnameVerifier {
         serverReady = true;
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
+
         OutputStream sslOS = sslSocket.getOutputStream();
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(sslOS));
         bw.write("HTTP/1.1 200 OK\r\n\r\n\r\n");
@@ -142,6 +143,11 @@ public class GetResponseCode implements HostnameVerifier {
     volatile Exception clientException = null;
 
     public static void main(String[] args) throws Exception {
+        if (NetSslUtils.isFIPS_140_3()) {
+            keyStoreFile = "keystore.p12";
+            trustStoreFile = "truststore.p12";
+        }
+
         String keyFilename =
             System.getProperty("test.src", "./") + "/" + pathToStores +
                 "/" + keyStoreFile;

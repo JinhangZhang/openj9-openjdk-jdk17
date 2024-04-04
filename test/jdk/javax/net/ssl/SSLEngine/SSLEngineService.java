@@ -28,6 +28,7 @@
  *
  * Helper class of SSL/TLS client/server communication.
  *
+ * @library /test/lib
  * @author Xuelei Fan
  */
 
@@ -58,6 +59,10 @@ public class SSLEngineService {
 
     private void init(String pathToStores) {
         this.pathToStores = pathToStores;
+        if (NetSslUtils.isFIPS_140_3()) {
+            keyStoreFile = "keystore.p12";
+            trustStoreFile = "truststore.p12";
+        }
         this.keyFilename =
             System.getProperty("test.src", "./") + "/" + pathToStores +
                 "/" + keyStoreFile;
@@ -388,8 +393,16 @@ public class SSLEngineService {
 
         SSLEngine ssle;
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        KeyStore ts;
+
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+            ts = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+            ts = KeyStore.getInstance("PKCS12");
+        }
 
         ks.load(new FileInputStream(keyFilename), passphrase);
         ts.load(new FileInputStream(trustFilename), passphrase);

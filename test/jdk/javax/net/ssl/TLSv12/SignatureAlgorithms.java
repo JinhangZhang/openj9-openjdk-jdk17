@@ -107,6 +107,14 @@ public class SignatureAlgorithms extends SSLContextTemplate {
             try (SSLSocket sslSocket = (SSLSocket)sslServerSocket.accept()) {
                 sslSocket.setEnabledCipherSuites(
                         sslSocket.getSupportedCipherSuites());
+                
+                if (NetSslUtils.isFIPS_140_3()) {
+                    if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                        System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                        return;
+                    }
+                }
+
                 InputStream sslIS = sslSocket.getInputStream();
                 OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -145,6 +153,13 @@ public class SignatureAlgorithms extends SSLContextTemplate {
 
             // enable a block cipher
             sslSocket.setEnabledCipherSuites(new String[] {cipherSuite});
+
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                    System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
+            }
 
             InputStream sslIS = sslSocket.getInputStream();
             OutputStream sslOS = sslSocket.getOutputStream();
@@ -262,17 +277,19 @@ public class SignatureAlgorithms extends SSLContextTemplate {
             return;
         }
 
-        /*
-         * Expose the target algorithms by diabling unexpected algorithms.
-         */
-        Security.setProperty(
-                "jdk.certpath.disabledAlgorithms", disabledAlgorithms);
+        if (!NetSslUtils.isFIPS_140_3()) {
+            /*
+            * Expose the target algorithms by diabling unexpected algorithms.
+            */
+            Security.setProperty(
+                    "jdk.certpath.disabledAlgorithms", disabledAlgorithms);
 
-        /*
-         * Reset the security property to make sure that the algorithms
-         * and keys used in this test are not disabled by default.
-         */
-        Security.setProperty( "jdk.tls.disabledAlgorithms", "");
+            /*
+            * Reset the security property to make sure that the algorithms
+            * and keys used in this test are not disabled by default.
+            */
+            Security.setProperty( "jdk.tls.disabledAlgorithms", "");
+        }
 
         /*
          * Start the tests.

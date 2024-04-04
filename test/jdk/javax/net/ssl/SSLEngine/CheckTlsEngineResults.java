@@ -41,6 +41,9 @@ import java.io.*;
 import java.security.*;
 import java.nio.*;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 public class CheckTlsEngineResults {
 
     private final SSLContext SSL_CONTEXT;
@@ -652,8 +655,16 @@ public class CheckTlsEngineResults {
     private SSLContext getSSLContext(String keyFile, String trustFile)
             throws Exception {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        KeyStore ts;
+
+        if (!(Utils.isFIPS() && Utils.getFipsProfile().contains("OpenJCEPlusFIPS"))) {
+            ks = KeyStore.getInstance("JKS");
+            ts = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+            ts = KeyStore.getInstance("PKCS12");
+        }
 
         char[] passphrase = "passphrase".toCharArray();
 

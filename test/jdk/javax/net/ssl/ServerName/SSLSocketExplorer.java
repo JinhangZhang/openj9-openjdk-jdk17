@@ -192,6 +192,12 @@ public class SSLSocketExplorer {
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
 
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                return;
+            }
+        }
+
         sslOS.write(280);
         sslOS.flush();
         sslIS.read();
@@ -212,7 +218,14 @@ public class SSLSocketExplorer {
     private static String[] supportedProtocols;    // supported protocols
 
     private static void parseArguments(String[] args) {
-        supportedProtocols = args[0].split(",");
+        List<String> supportProtocols = new ArrayList<>();
+        for (String supportProtocol : args[0].split(",")) {
+            if (!NetSslUtils.TLS_PROTOCOLS.contains(supportProtocol)) {
+                continue;
+            }
+            supportProtocols.add(supportProtocol);
+        }
+        supportedProtocols = supportProtocols.toArray(new String[0]);
     }
 
 
@@ -230,7 +243,14 @@ public class SSLSocketExplorer {
     public static void main(String[] args) throws Exception {
         // reset the security property to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            keyStoreFile = "keystore.p12";
+            trustStoreFile = "truststore.p12";
+        }
 
         String keyFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +
@@ -252,6 +272,9 @@ public class SSLSocketExplorer {
          */
         parseArguments(args);
 
+        if (supportedProtocols == null || supportedProtocols.length == 0) {
+            return;
+        }
         /*
          * Start the tests.
          */

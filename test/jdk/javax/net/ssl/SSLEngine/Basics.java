@@ -41,6 +41,7 @@ import java.util.Arrays;
 import javax.net.ssl.*;
 import javax.net.ssl.SSLEngineResult.*;
 
+import jdk.test.lib.Utils;
 import jdk.test.lib.security.SecurityUtils;
 
 public class Basics {
@@ -57,18 +58,31 @@ public class Basics {
                 "/" + TRUSTSTORE_FILE;
 
     public static void main(String[] args) throws Exception {
-        SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
+        if (!(Utils.isFIPS() && Utils.getFipsProfile().contains("OpenJCEPlusFIPS"))) {
+            SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
+            runTest("TLSv1.1", "TLS_DHE_DSS_WITH_AES_128_CBC_SHA");
+        }
 
         runTest("TLSv1.3", "TLS_AES_256_GCM_SHA384");
-        runTest("TLSv1.2", "TLS_RSA_WITH_AES_256_GCM_SHA384");
-        runTest("TLSv1.1", "TLS_DHE_DSS_WITH_AES_128_CBC_SHA");
+        if (!(Utils.isFIPS() && Utils.getFipsProfile().contains("OpenJCEPlusFIPS"))) {
+            runTest("TLSv1.2", "TLS_RSA_WITH_AES_256_GCM_SHA384");
+        }
     }
 
     private static void runTest(String protocol, String cipherSuite) throws Exception {
         System.out.printf("Testing %s with %s%n", protocol, cipherSuite);
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        KeyStore ts;
+
+        if (!(Utils.isFIPS() && Utils.getFipsProfile().contains("OpenJCEPlusFIPS"))) {
+            ks = KeyStore.getInstance("JKS");
+            ts = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+            ts = KeyStore.getInstance("PKCS12");
+        }
+
         char[] passphrase = "passphrase".toCharArray();
 
         ks.load(new FileInputStream(KEYSTORE_PATH), passphrase);

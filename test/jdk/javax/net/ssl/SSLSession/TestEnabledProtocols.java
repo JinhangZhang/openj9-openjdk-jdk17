@@ -77,6 +77,13 @@ public class TestEnabledProtocols extends SSLSocketTemplate {
     @Override
     protected void runServerApplication(SSLSocket socket) throws Exception {
         try {
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(socket.getSession().getCipherSuite())) {
+                    System.out.println(socket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
+            }
+
             socket.startHandshake();
 
             InputStream in = socket.getInputStream();
@@ -109,6 +116,14 @@ public class TestEnabledProtocols extends SSLSocketTemplate {
             showProtocols("client", clientProtocols);
 
             sslSocket.setEnabledProtocols(clientProtocols);
+
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                    System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
+            }
+
             sslSocket.startHandshake();
 
             String protocolName = sslSocket.getSession().getProtocol();
@@ -165,7 +180,9 @@ public class TestEnabledProtocols extends SSLSocketTemplate {
     }
 
     public static void main(String[] args) throws Exception {
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
 
         runCase(new String[] { "TLSv1" },
                 new String[] { "TLSv1" },

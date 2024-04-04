@@ -200,6 +200,20 @@ public class EngineCloseOnAlert {
             SSLEngineResult serverResult;
             ByteBuffer raw = ByteBuffer.allocate(32768);
             ByteBuffer plain = ByteBuffer.allocate(32768);
+            List<String> tmpCipherSuites = new ArrayList<>();
+            if (NetSslUtils.isFIPS_140_3()) {
+                for (String ciphersuite : client.getEnabledCipherSuites()) {
+                    if (!NetSslUtils.TLS_CIPHERSUITES.containsKey(ciphersuite)) {
+                        continue;
+                    } else if (!NetSslUtils.TLS_CIPHERSUITES.get(ciphersuite).equals(TLSv12)) {
+                        continue;
+                    }
+                    tmpCipherSuites.add(ciphersuite);
+                }
+                if (tmpCipherSuites.size() == 0) {
+                    return;
+                }
+            }
 
             System.out.println("");
             System.out.println("=======================================");

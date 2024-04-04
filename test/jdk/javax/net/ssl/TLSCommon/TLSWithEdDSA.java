@@ -556,13 +556,25 @@ public class TLSWithEdDSA extends SSLSocketTemplate {
     }
 
     public static void main(String[] args) throws Exception {
-        SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1", "TLSv1");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1", "TLSv1");
+        }
         certFac = CertificateFactory.getInstance("X.509");
         String testFormat;
 
         System.out.println("===== Test KeyManager alias retrieval =====");
-        testKeyManager(DEF_ALL_EE, "EdDSA",
-                new String[] {"ee_ed25519", "ee_ed448"});
+        try {
+            testKeyManager(DEF_ALL_EE, "EdDSA",
+                    new String[] {"ee_ed25519", "ee_ed448"});
+        } catch (java.security.NoSuchAlgorithmException nsae) {
+            if (NetSslUtils.isFIPS_140_3()) {
+                if ("EdDSA KeyFactory not available".equals(nsae.getMessage())) {
+                    System.out.println("Expected exception msg: <EdDSA KeyFactory not available> is caught.");
+                    return;
+                }
+            }
+            throw nsae;
+        }
 
         testFormat =
                 "===== Basic Ed25519 Server-side Authentication: %s =====\n";

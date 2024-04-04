@@ -27,7 +27,7 @@
  * @summary Add scatter/gather APIs for SSLEngine
  *
  * Check to see if the args are being parsed properly.
- *
+ * @library /test/lib
  */
 
 import javax.net.ssl.*;
@@ -35,6 +35,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class ArgCheck {
 
@@ -257,6 +260,8 @@ public class ArgCheck {
 
         KeyStore ks = KeyStore.getInstance("JKS");
         KeyStore ts = KeyStore.getInstance("JKS");
+
+        ks.load(null, null);
 
         char[] passphrase = "passphrase".toCharArray();
 

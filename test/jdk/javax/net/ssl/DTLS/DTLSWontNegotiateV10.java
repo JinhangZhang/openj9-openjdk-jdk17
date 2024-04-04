@@ -49,6 +49,12 @@ public class DTLSWontNegotiateV10 {
     private static final String DTLSV_1_2 = "DTLSv1.2";
 
     public static void main(String[] args) throws Exception {
+
+        // FIPS 140-3 does not support DTLS;
+        if (NetSslUtils.isFIPS_140_3()) {
+            return;
+        }
+
         if (args[0].equals(DTLSV_1_0)) {
             SecurityUtils.removeFromDisabledTlsAlgs(DTLSV_1_0);
         }

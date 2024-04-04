@@ -135,8 +135,24 @@ public class CipherTest {
         factory = (SSLSocketFactory)SSLSocketFactory.getDefault();
         SSLSocket socket = (SSLSocket)factory.createSocket();
         String[] cipherSuites = socket.getSupportedCipherSuites();
-        String[] protocols = socket.getSupportedProtocols();
-        String[] clientAuths = {null, "RSA", "DSA"};
+        String[] protocols = null;
+        String[] clientAuths = null;
+        if (NetSslUtils.isFIPS_140_3()) {
+            clientAuths = new String[]{null, "RSA"};
+            List<String> tmp = new ArrayList<>();
+            for (String protocol : socket.getSupportedProtocols()) {
+                if (NetSslUtils.TLS_PROTOCOLS.contains(protocol)) {
+                    tmp.add(protocol);
+                }
+            }
+            if (tmp.size() == 0 || tmp == null) {
+                return;
+            }
+            protocols = tmp.toArray(new String[0]);
+        } else {
+            clientAuths = new String[]{null, "RSA", "DSA"};
+            protocols = socket.getSupportedProtocols();
+        }
         tests = new ArrayList<TestParameters>(
             cipherSuites.length * protocols.length * clientAuths.length);
         for (int j = 0; j < protocols.length; j++) {
@@ -248,6 +264,16 @@ public class CipherTest {
                 try {
                     runTest(params);
                     System.out.println("Passed " + params);
+                } catch (javax.net.ssl.SSLException sslException) {
+                    if (NetSslUtils.isFIPS_140_3()) {
+                        if ("DSA signing not supported in FIPS".equals(sslException.getMessage())) {
+                            System.out.println("Expected exception msg: <DSA signing not supported in FIPS> is caught.");
+                        } else {
+                            cipherTest.setFailed();
+                            System.out.println("** Failed " + params + "**");
+                            sslException.printStackTrace();
+                        }
+                    }
                 } catch (Exception e) {
                     cipherTest.setFailed();
                     System.out.println("** Failed " + params + "**");
@@ -289,8 +315,13 @@ public class CipherTest {
 
     private static KeyStore readKeyStore(String name) throws Exception {
         File file = new File(PATH, name);
+        KeyStore ks;
         InputStream in = new FileInputStream(file);
-        KeyStore ks = KeyStore.getInstance("JKS");
+        if (NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("PKCS12");
+        } else {
+            ks = KeyStore.getInstance("JKS");
+        }
         ks.load(in, passwd);
         in.close();
         return ks;
@@ -311,6 +342,10 @@ public class CipherTest {
             "Initializing test '" + peerFactory.getName() + "'...");
         secureRandom = new SecureRandom();
         secureRandom.nextInt();
+        if (NetSslUtils.isFIPS_140_3()) {
+            keyStoreFile = "keystore.p12";
+            trustStoreFile = "truststore.p12";
+        }
         trustStore = readKeyStore(trustStoreFile);
         keyStore = readKeyStore(keyStoreFile);
         KeyManagerFactory keyFactory =

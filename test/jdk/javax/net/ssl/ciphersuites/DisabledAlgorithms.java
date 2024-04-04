@@ -119,7 +119,10 @@ public class DisabledAlgorithms {
                 break;
             case "empty":
                 // reset jdk.tls.disabledAlgorithms
-                Security.setProperty("jdk.tls.disabledAlgorithms", "");
+                if (!NetSslUtils.isFIPS_140_3()) {
+                    Security.setProperty("jdk.tls.disabledAlgorithms", "");
+                }
+                
                 System.out.println("jdk.tls.disabledAlgorithms = "
                         + Security.getProperty("jdk.tls.disabledAlgorithms"));
 
@@ -139,6 +142,10 @@ public class DisabledAlgorithms {
      */
     private static void checkFailure(String[] ciphersuites) throws Exception {
         try (SSLServer server = SSLServer.init(ciphersuites)) {
+            if (server == null) {
+                return;
+            }
+
             startNewThread(server);
             while (!server.isRunning()) {
                 sleep();
@@ -173,6 +180,9 @@ public class DisabledAlgorithms {
      */
     private static void checkSuccess(String[] ciphersuites) throws Exception {
         try (SSLServer server = SSLServer.init(ciphersuites)) {
+            if (server == null) {
+                return;
+            }
             startNewThread(server);
             while (!server.isRunning()) {
                 sleep();
@@ -315,6 +325,13 @@ public class DisabledAlgorithms {
                     SSLServerSocketFactory.getDefault();
             SSLServerSocket ssocket = (SSLServerSocket)
                     ssf.createServerSocket(0);
+
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(ssocket.getEnabledCipherSuites())) {
+                    System.out.println(ssocket.getEnabledCipherSuites() + " is not supported in FIPS 140-3.");
+                    return null;
+                }
+            }
 
             if (ciphersuites != null) {
                 System.out.println("Server: enable cipher suites: "
