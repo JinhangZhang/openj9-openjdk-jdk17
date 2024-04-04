@@ -479,7 +479,12 @@ public class CipherTestUtils {
             NoSuchAlgorithmException, CertificateException,
             InvalidKeySpecException {
 
-        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+        }
         ks.load(null, null);
         if (publicKey == null || keySpecStr == null) {
             throw new IllegalArgumentException("publicKey or "

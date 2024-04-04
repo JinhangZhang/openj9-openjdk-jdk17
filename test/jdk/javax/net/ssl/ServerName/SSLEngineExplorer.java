@@ -195,6 +195,22 @@ public class SSLEngineExplorer extends SSLEngineService {
         ssle.setEnabledProtocols(supportedProtocols);
 
         // handshaking
+        List<String> tmpCipherSuite = new ArrayList<>();
+        if (NetSslUtils.isFIPS_140_3()) {
+            for (String ciphersuite : ssle.getEnabledCipherSuites()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.containsKey(ciphersuite)) {
+                    continue;
+                }
+                if (!NetSslUtils.TLS_CIPHERSUITES.get(ciphersuite).equals("TLSv1.2")) {
+                    continue;
+                }
+                System.out.println(ciphersuite);
+                tmpCipherSuite.add(ciphersuite);
+            }
+            if (tmpCipherSuite.size() == 0) {
+                return;
+            }
+        }
         ByteBuffer peerNetData = handshaking(ssle, sc, null);
 
         // send out application data
@@ -220,7 +236,19 @@ public class SSLEngineExplorer extends SSLEngineService {
     private static String[] supportedProtocols;    // supported protocols
 
     private static void parseArguments(String[] args) {
-        supportedProtocols = args[0].split(",");
+        List<String> supportProtocols = new ArrayList<>();
+        for (String supportProtocol : args[0].split(",")) {
+            System.out.println("the args[0] is: " + supportProtocol);
+            if (!NetSslUtils.TLS_PROTOCOLS.contains(supportProtocol)) {
+                continue;
+            }
+            System.out.println("SupportProtocol is: " + supportProtocol);
+            supportProtocols.add(supportProtocol);
+        }
+        supportedProtocols = supportProtocols.toArray(new String[0]);
+        for (String s : supportedProtocols) {
+            System.out.println("SupportedProtocols is: " + s);
+        }
     }
 
 
@@ -237,7 +265,9 @@ public class SSLEngineExplorer extends SSLEngineService {
     public static void main(String args[]) throws Exception {
         // reset the security property to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
 
         if (debug)
             System.setProperty("javax.net.debug", "all");
@@ -245,8 +275,11 @@ public class SSLEngineExplorer extends SSLEngineService {
         /*
          * Get the customized arguments.
          */
+        System.out.println("args is: " + args);
         parseArguments(args);
-
+        if (supportedProtocols == null || supportedProtocols.length == 0) {
+            return;
+        }
         new SSLEngineExplorer();
     }
 

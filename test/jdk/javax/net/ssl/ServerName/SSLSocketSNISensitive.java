@@ -272,6 +272,13 @@ public class SSLSocketSNISensitive {
             sslSocket.setSoTimeout(5000);
             sslSocket.setSoLinger(true, 5);
 
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                    System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
+            }
+
             InputStream sslIS = sslSocket.getInputStream();
             OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -319,6 +326,13 @@ public class SSLSocketSNISensitive {
         try {
             sslSocket.setSoTimeout(5000);
             sslSocket.setSoLinger(true, 5);
+
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                    System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                    return;
+                }
+            }
 
             InputStream sslIS = sslSocket.getInputStream();
             OutputStream sslOS = sslSocket.getOutputStream();
@@ -368,7 +382,13 @@ public class SSLSocketSNISensitive {
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
         // create a key store
-        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+        }
+        
         ks.load(null, null);
 
         // import the trused cert
@@ -434,10 +454,12 @@ public class SSLSocketSNISensitive {
 
     public static void main(String[] args) throws Exception {
         // MD5 is used in this test case, don't disable MD5 algorithm.
-        Security.setProperty("jdk.certpath.disabledAlgorithms",
-                "MD2, RSA keySize < 1024");
-        Security.setProperty("jdk.tls.disabledAlgorithms",
-                "SSLv3, RC4, DH keySize < 768");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.certpath.disabledAlgorithms",
+                    "MD2, RSA keySize < 1024");
+            Security.setProperty("jdk.tls.disabledAlgorithms",
+                    "SSLv3, RC4, DH keySize < 768");
+        }
 
         if (debug)
             System.setProperty("javax.net.debug", "all");

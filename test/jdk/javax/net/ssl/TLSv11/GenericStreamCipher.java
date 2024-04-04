@@ -105,9 +105,11 @@ public class GenericStreamCipher {
         SSLServerSocket sslServerSocket =
             (SSLServerSocket) sslssf.createServerSocket(serverPort);
 
-        // enable a stream cipher
-        sslServerSocket.setEnabledCipherSuites(
-            new String[] {"SSL_RSA_WITH_RC4_128_MD5"});
+        if (!NetSslUtils.isFIPS_140_3()) {
+            // enable a stream cipher
+            sslServerSocket.setEnabledCipherSuites(
+                new String[] {"SSL_RSA_WITH_RC4_128_MD5"});
+        }
 
         serverPort = sslServerSocket.getLocalPort();
 
@@ -117,6 +119,14 @@ public class GenericStreamCipher {
         serverReady = true;
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -147,12 +157,19 @@ public class GenericStreamCipher {
         SSLSocket sslSocket = (SSLSocket)
             sslsf.createSocket("localhost", serverPort);
 
-        // enable TLSv1.1 only
-        sslSocket.setEnabledProtocols(new String[] {"TLSv1.1"});
+        if (!NetSslUtils.isFIPS_140_3()) {
+            // enable TLSv1.1 only
+            sslSocket.setEnabledProtocols(new String[] {"TLSv1.1"});
 
-        // enable a stream cipher
-        sslSocket.setEnabledCipherSuites(
-            new String[] {"SSL_RSA_WITH_RC4_128_MD5"});
+            // enable a stream cipher
+            sslSocket.setEnabledCipherSuites(
+                new String[] {"SSL_RSA_WITH_RC4_128_MD5"});
+        } else {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
 
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
@@ -178,7 +195,9 @@ public class GenericStreamCipher {
     public static void main(String[] args) throws Exception {
         // reset the security property to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        }
 
         String keyFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +

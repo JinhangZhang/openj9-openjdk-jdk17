@@ -113,6 +113,12 @@ public class CriticalSubjectAltName implements HostnameVerifier {
         serverReady = true;
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
         OutputStream sslOS = sslSocket.getOutputStream();
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(sslOS));
         bw.write("HTTP/1.1 200 OK\r\n\r\n\r\n");
@@ -139,6 +145,12 @@ public class CriticalSubjectAltName implements HostnameVerifier {
         URL url = new URL("https://localhost:"+serverPort+"/index.html");
         HttpsURLConnection urlc = (HttpsURLConnection)url.openConnection();
         urlc.setHostnameVerifier(this);
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(urlc.getCipherSuite())) {
+                System.out.println(urlc.getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
         urlc.getInputStream();
 
         if (urlc.getResponseCode() == -1) {
@@ -159,10 +171,12 @@ public class CriticalSubjectAltName implements HostnameVerifier {
 
     public static void main(String[] args) throws Exception {
         // MD5 is used in this test case, don't disable MD5 algorithm.
-        Security.setProperty("jdk.certpath.disabledAlgorithms",
-                "MD2, RSA keySize < 1024");
-        Security.setProperty("jdk.tls.disabledAlgorithms",
-                "SSLv3, RC4, DH keySize < 768");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.certpath.disabledAlgorithms",
+                    "MD2, RSA keySize < 1024");
+            Security.setProperty("jdk.tls.disabledAlgorithms",
+                    "SSLv3, RC4, DH keySize < 768");
+        }
 
         String keyFilename =
             System.getProperty("test.src", "./") + "/" + pathToStores +
@@ -170,6 +184,11 @@ public class CriticalSubjectAltName implements HostnameVerifier {
         String trustFilename =
             System.getProperty("test.src", "./") + "/" + pathToStores +
                 "/" + trustStoreFile;
+
+        if (NetSslUtils.isFIPS_140_3() && 
+            (keyStoreFile.endsWith(".jks") || trustFilename.endsWith(".jks"))) {
+                return;
+        }
 
         System.setProperty("javax.net.ssl.keyStore", keyFilename);
         System.setProperty("javax.net.ssl.keyStorePassword", passwd);

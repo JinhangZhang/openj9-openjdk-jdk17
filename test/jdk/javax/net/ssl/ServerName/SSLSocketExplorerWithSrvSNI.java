@@ -151,6 +151,13 @@ public class SSLSocketExplorerWithSrvSNI {
         params.setSNIMatchers(matchers);
         sslSocket.setSSLParameters(params);
 
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -185,6 +192,13 @@ public class SSLSocketExplorerWithSrvSNI {
             (SSLSocketFactory) SSLSocketFactory.getDefault();
         SSLSocket sslSocket = (SSLSocket)
             sslsf.createSocket("localhost", serverPort);
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
 
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();

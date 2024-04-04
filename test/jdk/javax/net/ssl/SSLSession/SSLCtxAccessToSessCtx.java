@@ -101,6 +101,14 @@ public class SSLCtxAccessToSessCtx  {
         serverReady.getAndDecrement();
         int read = 0;
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
         read = sslIS.read();
@@ -135,6 +143,14 @@ public class SSLCtxAccessToSessCtx  {
         SSLSocket sslSocket;
         sslSocket = (SSLSocket) sslsf.
                 createSocket("localhost", serverPorts[0]);
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
         sslOS.write(237);
@@ -179,7 +195,13 @@ public class SSLCtxAccessToSessCtx  {
 
         sslctx = SSLContext.getInstance("TLS");
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+        }
+
         ks.load(new FileInputStream(keyFilename), passwd.toCharArray());
         kmf.init(ks, passwd.toCharArray());
         sslctx.init(kmf.getKeyManagers(), null, null);

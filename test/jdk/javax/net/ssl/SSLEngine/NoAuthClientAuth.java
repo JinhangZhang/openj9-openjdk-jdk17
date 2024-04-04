@@ -30,6 +30,7 @@
  * @test
  * @bug 4495742 8190492
  * @summary Demonstrate SSLEngine switch from no client auth to client auth.
+ * @library /test/lib
  * @run main/othervm NoAuthClientAuth SSLv3
  * @run main/othervm NoAuthClientAuth TLSv1
  * @run main/othervm NoAuthClientAuth TLSv1.1
@@ -81,6 +82,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 // Note that this test case depends on JSSE provider implementation details.
 public class NoAuthClientAuth {
@@ -140,15 +144,31 @@ public class NoAuthClientAuth {
      * Main entry point for this test.
      */
     public static void main(String args[]) throws Exception {
-        Security.setProperty("jdk.tls.disabledAlgorithms", "");
+        if (!(Utils.isFIPS() && Utils.getFipsProfile())) {
+            Security.setProperty("jdk.tls.disabledAlgorithms", "");
+            tlsProtocol = args[0];
+        } else {
+            if (SecurityUtils.TLS_PROTOCOLS.contains(args[0])) {
+                tlsProtocol = args[0];
+            }
+        }
+        if (tlsProtocol == null) {
+            return;
+        }
 
         if (debug) {
             System.setProperty("javax.net.debug", "all");
         }
 
-        tlsProtocol = args[0];
+        try {
+            NoAuthClientAuth test = new NoAuthClientAuth();
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
 
-        NoAuthClientAuth test = new NoAuthClientAuth();
         test.runTest();
 
         System.out.println("Test Passed.");

@@ -194,11 +194,13 @@ public class ShortRSAKeyGCM extends SSLContextTemplate {
     volatile Exception clientException = null;
 
     public static void main(String[] args) throws Exception {
-        // reset the security property to make sure that the algorithms
-        // and keys used in this test are not disabled.
-        Security.setProperty("jdk.certpath.disabledAlgorithms", "MD2");
-        Security.setProperty("jdk.tls.disabledAlgorithms",
-                "SSLv3, RC4, DH keySize < 768");
+        if(!NetSslUtils.isFIPS_140_3()) {
+            // reset the security property to make sure that the algorithms
+            // and keys used in this test are not disabled.
+            Security.setProperty("jdk.certpath.disabledAlgorithms", "MD2");
+            Security.setProperty("jdk.tls.disabledAlgorithms",
+                    "SSLv3, RC4, DH keySize < 768");
+        }
 
         if (debug) {
             System.setProperty("javax.net.debug", "all");
@@ -209,10 +211,28 @@ public class ShortRSAKeyGCM extends SSLContextTemplate {
          */
         parseArguments(args);
 
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(cipherSuite)) {
+                return;
+            }
+        }
+
         /*
          * Start the tests.
          */
-        new ShortRSAKeyGCM();
+        try {
+            new ShortRSAKeyGCM();
+        } catch (java.security.spec.InvalidKeySpecException ikse) {
+            if (NetSslUtils.isFIPS_140_3()) {
+                if ("Inappropriate key specification: RSA keys must be at least 1024 bits long".equals(ikse.getMessage())) {
+                    System.out.println("Expected exception msg: <Inappropriate key specification: RSA keys must be at least 1024 bits long> is caught");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
     }
 
     Thread clientThread = null;

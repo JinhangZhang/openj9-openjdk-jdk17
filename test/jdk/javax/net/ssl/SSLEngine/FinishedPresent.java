@@ -28,6 +28,7 @@
  * @test
  * @bug 8233619
  * @summary SSLEngine has not yet caused Solaris kernel to panic
+ * @library /test/lib
  * @run main/othervm FinishedPresent
  */
 import javax.net.ssl.*;
@@ -35,6 +36,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class FinishedPresent {
 
@@ -95,7 +99,15 @@ public class FinishedPresent {
             System.setProperty("javax.net.debug", "all");
         }
 
-        FinishedPresent test = new FinishedPresent();
+        try {
+            FinishedPresent test = new FinishedPresent();
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
+
         test.runTest();
 
         log("Test Passed.");

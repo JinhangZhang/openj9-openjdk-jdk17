@@ -41,7 +41,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+import java.util.*;
 
+import jdk.test.lib.Utils;
 import jdk.test.lib.security.SecurityUtils;
 
 public class Arrays {
@@ -187,16 +189,25 @@ public class Arrays {
         contextVersion = args[0];
         // Re-enable context version if it is disabled.
         // If context version is SSLv3, TLSv1 needs to be re-enabled.
-        if (contextVersion.equals("SSLv3")) {
-            SecurityUtils.removeFromDisabledTlsAlgs("TLSv1");
-        } else if (contextVersion.equals("TLSv1") ||
-                   contextVersion.equals("TLSv1.1")) {
-            SecurityUtils.removeFromDisabledTlsAlgs(contextVersion);
+        if (!(Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS"))) {
+            if (contextVersion.equals("SSLv3")) {
+                SecurityUtils.removeFromDisabledTlsAlgs("TLSv1");
+            } else if (contextVersion.equals("TLSv1") ||
+                    contextVersion.equals("TLSv1.1")) {
+                SecurityUtils.removeFromDisabledTlsAlgs(contextVersion);
+            }
         }
 
-        Arrays test;
+        Arrays test = null;
 
-        test = new Arrays();
+        try {
+            test = new Arrays();
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
 
         test.createSSLEngines();
 

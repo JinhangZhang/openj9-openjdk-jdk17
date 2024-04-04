@@ -26,7 +26,7 @@
  * @bug 4981697
  * @summary Rework the X509KeyManager to avoid incompatibility issues
  * @author Brad R. Wetmore
- *
+ * @library /test/lib
  * @run main/othervm -Djdk.tls.acknowledgeCloseNotify=true ExtendedKeyEngine
  */
 
@@ -35,6 +35,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class ExtendedKeyEngine {
 
@@ -145,13 +148,29 @@ public class ExtendedKeyEngine {
         ExtendedKeyEngine test;
 
         System.out.println("This test should run to completion");
-        test = new ExtendedKeyEngine(true);
+        try {
+            test = new ExtendedKeyEngine(true);
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
+
         test.createSSLEngines();
         test.runTest();
         System.out.println("Done!");
 
         System.out.println("This test should fail with a Handshake Error");
-        test = new ExtendedKeyEngine(false);
+        try {
+            test = new ExtendedKeyEngine(false);
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
+
         test.createSSLEngines();
 
         try {

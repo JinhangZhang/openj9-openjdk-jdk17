@@ -148,6 +148,19 @@ public final class Utils {
      * Contains the seed value used for {@link java.util.Random} creation.
      */
     public static final long SEED;
+
+    public static final String isFIPS = System.getProperty("semeru.fips");
+    public static boolean isFIPS() {
+        System.out.println("semeru.fips is: " + System.getProperty("semeru.fips"));
+        return Boolean.parseBoolean(isFIPS);
+    }
+
+    public static final String FIPS_PROFILE = System.getProperty("semeru.customprofile");
+    public static String getFipsProfile() {
+        System.out.println("semeru.customprofile is: " + System.getProperty("semeru.customprofile"));
+        return FIPS_PROFILE;
+    }
+
     static {
        var seed = Long.getLong(SEED_PROPERTY_NAME);
        if (seed != null) {

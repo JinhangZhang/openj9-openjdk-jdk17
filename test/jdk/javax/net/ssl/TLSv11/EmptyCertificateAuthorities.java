@@ -126,6 +126,14 @@ public class EmptyCertificateAuthorities {
         serverReady = true;
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
 
@@ -156,8 +164,17 @@ public class EmptyCertificateAuthorities {
         SSLSocket sslSocket = (SSLSocket)
             sslsf.createSocket("localhost", serverPort);
 
-        // enable TLSv1.1 only
-        sslSocket.setEnabledProtocols(new String[] {"TLSv1.1"});
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
+        if (!NetSslUtils.isFIPS_140_3()) {
+            // enable TLSv1.1 only
+            sslSocket.setEnabledProtocols(new String[] {"TLSv1.1"});
+        }
 
         InputStream sslIS = sslSocket.getInputStream();
         OutputStream sslOS = sslSocket.getOutputStream();
@@ -175,7 +192,12 @@ public class EmptyCertificateAuthorities {
             System.getProperty("javax.net.ssl.keyStorePassword").toCharArray();
         String keyFilename = System.getProperty("javax.net.ssl.keyStore");
 
-        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+        }
         ks.load(new FileInputStream(keyFilename), password);
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("NewSunX509");
@@ -223,7 +245,12 @@ public class EmptyCertificateAuthorities {
                 System.getProperty("javax.net.ssl.trustStore");
 
             try {
-                KeyStore ks = KeyStore.getInstance("JKS");
+                KeyStore ks;
+                if (!NetSslUtils.isFIPS_140_3()) {
+                    ks = KeyStore.getInstance("JKS");
+                } else {
+                    ks = KeyStore.getInstance("PKCS12");
+                }
                 ks.load(new FileInputStream(trustFilename), password);
 
                 TrustManagerFactory tmf =
@@ -250,10 +277,12 @@ public class EmptyCertificateAuthorities {
 
     public static void main(String[] args) throws Exception {
         // MD5 is used in this test case, don't disable MD5 algorithm.
-        Security.setProperty("jdk.certpath.disabledAlgorithms",
-                "MD2, RSA keySize < 1024");
-        Security.setProperty("jdk.tls.disabledAlgorithms",
-                "SSLv3, RC4, DH keySize < 768");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.certpath.disabledAlgorithms",
+                    "MD2, RSA keySize < 1024");
+            Security.setProperty("jdk.tls.disabledAlgorithms",
+                    "SSLv3, RC4, DH keySize < 768");
+        }
 
         String keyFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +

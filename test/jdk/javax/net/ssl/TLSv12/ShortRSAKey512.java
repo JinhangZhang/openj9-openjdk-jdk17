@@ -76,8 +76,16 @@ public class ShortRSAKey512 extends SSLContextTemplate {
      * to avoid infinite hangs.
      */
     void doServerSide() throws Exception {
-        SSLContext context = createSSLContext(null,
+        SSLContext context = null;
+        try {
+            context = createSSLContext(null,
                 new Cert[]{Cert.EE_RSA_MD5_512}, getServerContextParameters());
+        } catch (java.security.spec.InvalidKeySpecException ikse) {
+            if (NetSslUtils.isFIPS_140_3()) {
+                System.out.println("512 RSA keysize is not accepted in FIPS 140-3 mode.");
+                return;
+            }
+        }
         SSLServerSocketFactory sslssf = context.getServerSocketFactory();
         try (SSLServerSocket sslServerSocket =
                 (SSLServerSocket) sslssf.createServerSocket(serverPort)) {
@@ -116,8 +124,16 @@ public class ShortRSAKey512 extends SSLContextTemplate {
             Thread.sleep(50);
         }
 
-        SSLContext context = createSSLContext(new Cert[]{Cert.CA_RSA_MD5_512},
+        SSLContext context = null;
+        try {
+            context = createSSLContext(new Cert[]{Cert.CA_RSA_MD5_512},
                 null, getClientContextParameters());
+        } catch (java.security.spec.InvalidKeySpecException ikse) {
+            if (NetSslUtils.isFIPS_140_3()) {
+                System.out.println("512 RSA keysize is not accepted in FIPS 140-3 mode.");
+                return;
+            }
+        }
         SSLSocketFactory sslsf = context.getSocketFactory();
 
         System.out.println("Client connects to port " + serverPort);
@@ -170,9 +186,11 @@ public class ShortRSAKey512 extends SSLContextTemplate {
     public static void main(String[] args) throws Exception {
         // reset the security property to make sure that the algorithms
         // and keys used in this test are not disabled.
-        Security.setProperty("jdk.certpath.disabledAlgorithms", "MD2");
-        Security.setProperty("jdk.tls.disabledAlgorithms",
-                "SSLv3, RC4, DH keySize < 768");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.certpath.disabledAlgorithms", "MD2");
+            Security.setProperty("jdk.tls.disabledAlgorithms",
+                    "SSLv3, RC4, DH keySize < 768");
+        }
 
         if (debug)
             System.setProperty("javax.net.debug", "all");

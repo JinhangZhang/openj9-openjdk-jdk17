@@ -795,13 +795,20 @@ abstract public class SSLEngineTestCase {
      *           TESTED_SECURITY_PROTOCOL.
      */
     public static SSLContext getContext() {
+        KeyStore ks;
+        KeyStore ts;
         try {
-            java.security.Security.setProperty(
-                    "jdk.tls.disabledAlgorithms", "");
-            java.security.Security.setProperty(
-                    "jdk.certpath.disabledAlgorithms", "");
-            KeyStore ks = KeyStore.getInstance("JKS");
-            KeyStore ts = KeyStore.getInstance("JKS");
+            if (!NetSslUtils.isFIPS_140_3()) {
+                java.security.Security.setProperty(
+                        "jdk.tls.disabledAlgorithms", "");
+                java.security.Security.setProperty(
+                        "jdk.certpath.disabledAlgorithms", "");
+                ks = KeyStore.getInstance("JKS");
+                ts = KeyStore.getInstance("JKS");
+            } else {
+                ks = KeyStore.getInstance("PKCS12");
+                ts = KeyStore.getInstance("PKCS12");
+            }
             char[] passphrase = PASSWD.toCharArray();
             try (FileInputStream keyFileStream =
                     new FileInputStream(KEY_FILE_NAME)) {
@@ -848,7 +855,7 @@ abstract public class SSLEngineTestCase {
      * SSLEngineTestCase.TEST_MODE is "krb".
      */
     public static void setUpAndStartKDCIfNeeded() {
-        if (TEST_MODE.equals("krb")) {
+        if (TEST_MODE.equals("krb") && !NetSslUtils.isFIPS_140_3()) {
             setUpAndStartKDC();
         }
     }
@@ -922,6 +929,12 @@ abstract public class SSLEngineTestCase {
         System.out.println(description + " ciphers testing");
         System.out.println("===========================================");
         for (String cs : ciphers.ciphers) {
+            if (NetSslUtils.isFIPS_140_3()) {
+                if (!NetSslUtils.TLS_CIPHERSUITES.contains(cs)) {
+                    System.out.println(cs + " is not supported in FIPS 140-3.");
+                    return failedNum++;
+                }
+            }
             System.out.println("---------------------------------------");
             System.out.println("Testing cipher suite " + cs);
             System.out.println("---------------------------------------");

@@ -63,14 +63,32 @@ public class DisabledShortRSAKeys extends SSLSocketTemplate {
 
     @Override
     public SSLContext createClientSSLContext() throws Exception {
-        return createSSLContext(new Cert[]{Cert.CA_RSA_512}, null,
-                new ContextParameters(enabledProtocol, tmAlgorithm, "NewSunX509"));
+        SSLContext sslContext = null;
+        try {
+            sslContext = createSSLContext(new Cert[]{Cert.CA_RSA_512}, null,
+                    new ContextParameters(enabledProtocol, tmAlgorithm, "NewSunX509"));
+        } catch (java.security.spec.InvalidKeySpecException ikse) {
+            if (NetSslUtils.isFIPS_140_3()) {
+                System.out.println("512 RSA keysize is not accepted in FIPS 140-3 mode.");
+                return null;
+            }
+        }
+        return sslContext;
     }
 
     @Override
     public SSLContext createServerSSLContext() throws Exception {
-        return createSSLContext(null, new Cert[]{Cert.EE_RSA_512},
-                new ContextParameters(enabledProtocol, tmAlgorithm, "NewSunX509"));
+        SSLContext sslContext = null;
+        try {
+            sslContext = createSSLContext(null, new Cert[]{Cert.EE_RSA_512},
+                    new ContextParameters(enabledProtocol, tmAlgorithm, "NewSunX509"));
+        } catch (java.security.spec.InvalidKeySpecException ikse) {
+            if (NetSslUtils.isFIPS_140_3()) {
+                System.out.println("512 RSA keysize is not accepted in FIPS 140-3 mode.");
+                return null;
+            }
+        }
+        return sslContext;
     }
 
     @Override
@@ -109,10 +127,12 @@ public class DisabledShortRSAKeys extends SSLSocketTemplate {
     }
 
     public static void main(String[] args) throws Exception {
-        Security.setProperty("jdk.certpath.disabledAlgorithms",
-                "RSA keySize < 1024");
-        Security.setProperty("jdk.tls.disabledAlgorithms",
-                "RSA keySize < 1024");
+        if (!NetSslUtils.isFIPS_140_3()) {
+            Security.setProperty("jdk.certpath.disabledAlgorithms",
+                    "RSA keySize < 1024");
+            Security.setProperty("jdk.tls.disabledAlgorithms",
+                    "RSA keySize < 1024");
+        }
 
         if (debug) {
             System.setProperty("javax.net.debug", "all");

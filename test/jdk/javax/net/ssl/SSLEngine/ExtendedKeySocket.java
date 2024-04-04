@@ -30,12 +30,16 @@
  *     SunJSSE does not support dynamic system properties, no way to re-use
  *     system properties in samevm/agentvm mode.
  * @author Brad R. Wetmore
+ * @library /test/lib
  */
 
 import java.io.*;
 import java.net.*;
 import javax.net.ssl.*;
 import java.security.*;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class ExtendedKeySocket {
 
@@ -90,9 +94,9 @@ public class ExtendedKeySocket {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
         KeyStore keyKS = KeyStore.getInstance("JKS");
-        keyKS.load(new FileInputStream(keyFilename), passwd);
-
         KeyStore trustKS = KeyStore.getInstance("JKS");
+
+        keyKS.load(new FileInputStream(keyFilename), passwd);
         trustKS.load(new FileInputStream(trustFilename), passwd);
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
@@ -222,7 +226,14 @@ public class ExtendedKeySocket {
         /*
          * Start the tests.
          */
-        new ExtendedKeySocket();
+        try {
+            new ExtendedKeySocket();
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
     }
 
     Thread clientThread = null;

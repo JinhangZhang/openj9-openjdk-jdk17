@@ -72,6 +72,13 @@ public class RenegotiateTLS13 {
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
 
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
+
         DataInputStream sslIS =
             new DataInputStream(sslSocket.getInputStream());
         String s = "";
@@ -99,6 +106,13 @@ public class RenegotiateTLS13 {
 
         SSLSocket sslSocket = (SSLSocket)
             sslsf.createSocket("localhost", serverPort);
+
+        if (NetSslUtils.isFIPS_140_3()) {
+            if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                return;
+            }
+        }
 
         DataOutputStream sslOS =
             new DataOutputStream(sslSocket.getOutputStream());
@@ -277,9 +291,20 @@ public class RenegotiateTLS13 {
     SSLContext initContext() throws Exception {
         System.out.println("Using TLS13");
         SSLContext sc = SSLContext.getInstance("TLSv1.3");
-        KeyStore ks = KeyStore.getInstance(
-                new File(System.getProperty("javax.net.ssl.keyStore")),
-                passwd.toCharArray());
+        KeyStore ks = null;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            try {
+                ks = KeyStore.getInstance(
+                    new File(System.getProperty("javax.net.ssl.keyStore")),
+                    passwd.toCharArray());
+            } catch (java.lang.IllegalArgumentException iae) {
+                if ("File does not exist or it does not refer to a normal file: NONE".equals(iae.getMessage())) {
+                    System.out.println("Expected exception msg: <File does not exist or it does not refer to a normal file: NONE> is caught for sign.");
+                    return null;
+                }
+            }
+        }
+
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(
                 KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(ks, passwd.toCharArray());

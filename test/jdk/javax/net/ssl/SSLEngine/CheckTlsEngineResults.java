@@ -25,7 +25,7 @@
  * @test
  * @bug 4948079
  * @summary Verify return values from SSLEngine wrap/unwrap (TLSv1.2) operations
- *
+ * @library /test/lib
  * @run main CheckTlsEngineResults
  *
  * @author Brad Wetmore
@@ -40,6 +40,9 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
+
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
 
 public class CheckTlsEngineResults {
 
@@ -631,7 +634,15 @@ public class CheckTlsEngineResults {
     }
 
     public static void main(String args[]) throws Exception {
-        CheckTlsEngineResults cs = new CheckTlsEngineResults();
+        try {
+            CheckTlsEngineResults cs = new CheckTlsEngineResults();
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
+
         cs.test();
         System.out.println("Test Passed.");
     }

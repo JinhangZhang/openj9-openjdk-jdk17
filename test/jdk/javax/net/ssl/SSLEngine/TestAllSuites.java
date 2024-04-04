@@ -48,6 +48,9 @@ import java.nio.*;
 import java.util.*;
 import java.util.Arrays;
 
+import jdk.test.lib.Utils;
+import jdk.test.lib.security.SecurityUtils;
+
 public class TestAllSuites {
 
     private static final boolean DEBUG = Boolean.getBoolean("test.debug");
@@ -224,13 +227,26 @@ public class TestAllSuites {
         if (args.length < 1) {
             throw new RuntimeException("Missing TLS protocol parameter.");
         }
-
-        switch(args[0]) {
-            case "TLSv1.1" -> SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
-            case "TLSv1.3" -> SecurityUtils.addToDisabledTlsAlgs("TLSv1.2");
+        if (!(Utils.isFIPS() && Utils.getFipsProfile())) {
+            switch(args[0]) {
+                case "TLSv1.1" -> SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
+                case "TLSv1.3" -> SecurityUtils.addToDisabledTlsAlgs("TLSv1.2");
+            }
+        } else {
+            if (!SecurityUtils.TLS_PROTOCOLS.contains(args[0])) {
+                return;
+            }
         }
 
-        TestAllSuites testAllSuites = new TestAllSuites(args[0]);
+        try {
+            TestAllSuites testAllSuites = new TestAllSuites(args[0]);
+        } catch (java.security.KeyStoreException kse) {
+            if (Utils.isFIPS() && Utils.getFipsProfile().equals("OpenJCEPlusFIPS") && "JKS not found".equals(kse.getMessage())) {
+                System.out.println("Expected exception msg: <: JKS not found> is caught");
+                return;
+            }
+        }
+
         testAllSuites.createSSLEngines();
         testAllSuites.test();
 

@@ -144,6 +144,14 @@ public class SessionCacheSizeTests {
                 try (SSLSocket sslSocket =
                         (SSLSocket)sslServerSocket.accept()) {
                     sslSocket.setSoTimeout(90000);      // timeout to read
+                    
+                    if (NetSslUtils.isFIPS_140_3()) {
+                        if (!NetSslUtils.TLS_CIPHERSUITES.contains(sslSocket.getSession().getCipherSuite())) {
+                            System.out.println(sslSocket.getSession().getCipherSuite() + " is not supported in FIPS 140-3.");
+                            return;
+                        }
+                    }
+
                     InputStream sslIS = sslSocket.getInputStream();
                     OutputStream sslOS = sslSocket.getOutputStream();
                     read = sslIS.read();
@@ -315,7 +323,13 @@ public class SessionCacheSizeTests {
 
         sslctx = SSLContext.getInstance("TLS");
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ks;
+        if (!NetSslUtils.isFIPS_140_3()) {
+            ks = KeyStore.getInstance("JKS");
+        } else {
+            ks = KeyStore.getInstance("PKCS12");
+        }
+
         try (FileInputStream fis = new FileInputStream(keyFilename)) {
             ks.load(fis, passwd.toCharArray());
         }

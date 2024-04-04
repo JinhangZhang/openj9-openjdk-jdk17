@@ -259,7 +259,12 @@ public abstract class ClientHelloInterOp {
         // Import the trused certs.
         ByteArrayInputStream is;
         if (trustedMaterials != null && trustedMaterials.length != 0) {
-            ts = KeyStore.getInstance("JKS");
+            if (!NetSslUtils.isFIPS_140_3()) {
+                ts = KeyStore.getInstance("JKS");
+            } else {
+                ts = KeyStore.getInstance("PKCS12");
+            }
+            
             ts.load(null, null);
 
             Certificate[] trustedCert =
@@ -288,7 +293,11 @@ public abstract class ClientHelloInterOp {
             (keyMaterialCerts.length == keyMaterialKeys.length) &&
             (keyMaterialCerts.length == keyMaterialKeyAlgs.length);
         if (hasKeyMaterials) {
-            ks = KeyStore.getInstance("JKS");
+            if (!NetSslUtils.isFIPS_140_3()) {
+                ks = KeyStore.getInstance("JKS");
+            } else {
+                ks = KeyStore.getInstance("PKCS12");
+            }
             ks.load(null, null);
 
             for (int i = 0; i < keyMaterialCerts.length; i++) {
