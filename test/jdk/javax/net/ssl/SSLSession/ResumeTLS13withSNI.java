@@ -27,7 +27,6 @@
 /*
  * @test
  * @bug 8211806 8277881 8277307
- * @library /test/lib
  * @summary TLS 1.3 handshake server name indication is missing on a session resume
  * @run main/othervm ResumeTLS13withSNI
  */
@@ -38,9 +37,6 @@ import java.io.*;
 import java.security.*;
 import java.nio.*;
 import java.util.List;
-
-import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class ResumeTLS13withSNI {
 
@@ -73,10 +69,10 @@ public class ResumeTLS13withSNI {
     private static final String trustStoreFile = "truststore";
     private static final char[] passphrase = "passphrase".toCharArray();
 
-    private static String keyFilename =
+    private static final String keyFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +
                 "/" + keyStoreFile;
-    private static String trustFilename =
+    private static final String trustFilename =
             System.getProperty("test.src", ".") + "/" + pathToStores +
                 "/" + trustStoreFile;
 
@@ -468,7 +464,7 @@ public class ResumeTLS13withSNI {
             char[] pass) throws GeneralSecurityException, IOException {
         KeyManagerFactory kmf;
         KeyStore ks = KeyStore.getInstance("JKS");
-        
+
         try (FileInputStream fsIn = new FileInputStream(ksPath)) {
             ks.load(fsIn, pass);
             kmf = KeyManagerFactory.getInstance("SunX509");

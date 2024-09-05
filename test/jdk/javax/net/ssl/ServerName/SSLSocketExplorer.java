@@ -270,13 +270,35 @@ public class SSLSocketExplorer {
          */
         parseArguments(args);
 
-        if (supportedProtocols == null || supportedProtocols.length == 0) {
-            return;
-        }
         /*
          * Start the tests.
          */
-        new SSLSocketExplorer();
+        try {
+            new SSLSocketExplorer();
+        } catch (javax.net.ssl.SSLHandshakeException sslhe) {
+            if (Utils.isFIPS()) {
+                if (supportedProtocols == null || supportedProtocols.length == 0) {
+                    if ("No appropriate protocol (protocol is disabled or cipher suites are inappropriate)".equals(sslhe.getMessage())) {
+                        System.out.println("Expected exception msg: <No appropriate protocol (protocol is disabled or cipher suites are inappropriate)> is caught");
+                        return;
+                    } else {
+                        System.out.println("Unexpected exception msg: <" + sslhe.getMessage() + "> is caught");
+                        return;
+                    }
+                } else {
+                    System.out.println("Unexpected exception is caught");
+                    sslhe.printStackTrace();
+                    return;
+                }
+            } else {
+                System.out.println("Unexpected exception is caught in Non-FIPS mode");
+                sslhe.printStackTrace();
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
     }
 
     Thread clientThread = null;

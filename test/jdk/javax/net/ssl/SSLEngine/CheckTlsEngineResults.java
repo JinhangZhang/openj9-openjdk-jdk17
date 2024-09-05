@@ -39,13 +39,8 @@ import javax.net.ssl.SSLEngineResult.*;
 import java.io.*;
 import java.security.*;
 import java.nio.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class CheckTlsEngineResults {
 
@@ -72,8 +67,6 @@ public class CheckTlsEngineResults {
 
     private ByteBuffer clientToServer;        // "reliable" transport clientEngine->serverEngine
     private ByteBuffer serverToClient;        // "reliable" transport serverEngine->clientEngine
-
-    private static Thread catchException;
 
     /*
      * Majority of the test case is here, setup is done below.
@@ -140,7 +133,6 @@ public class CheckTlsEngineResults {
                 "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
         } else {
             suite1 = new String [] {
-                // "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256" };
                 "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256" };
         }
 
@@ -169,9 +161,7 @@ public class CheckTlsEngineResults {
         result2 = serverEngine.unwrap(clientToServer, serverIn);
 
         checkResult(clientToServer, serverIn, result2,
-             Status.OK, HandshakeStatus.NEED_TASK, result1.bytesProduced(), 0);
-
-        
+             Status.OK, HandshakeStatus.NEED_TASK, result1.bytesProduced(), 0);        
         runDelegatedTasks(serverEngine);
 
         clientToServer.compact();
@@ -207,7 +197,6 @@ public class CheckTlsEngineResults {
 
         checkResult(clientToServer, serverIn, result2,
              Status.OK, HandshakeStatus.NEED_TASK, result1.bytesProduced(), 0);
-
         runDelegatedTasks(serverEngine);
 
         clientToServer.compact();
@@ -713,7 +702,7 @@ public class CheckTlsEngineResults {
         log("");
     }
 
-    private static void runDelegatedTasks(SSLEngine engine) throws Exception {
+    private static void runDelegatedTasks(SSLEngine engine) {
 
         Runnable runnable;
         while ((runnable = engine.getDelegatedTask()) != null) {
@@ -721,49 +710,6 @@ public class CheckTlsEngineResults {
             runnable.run();
         }
     }
-    // private static void runDelegatedTasks(SSLEngine engine) throws Exception {
-    //     ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-    //     // create Runnable
-    //     Runnable myRunnable = () -> {
-    //         System.out.println("Executing Runnable...");
-    //         throw new RuntimeException("Simulated exception in Runnable");
-    //     };
-
-    //     RunnableCallable runnableCallable = new RunnableCallable(myRunnable);
-
-    //     Future<Void> future = executorService.submit(runnableCallable);
-
-    //     try {
-    //         future.get();
-    //     } catch (Exception e) {
-    //         System.err.println("Exception caught: " + e.getMessage());
-    //         e.printStackTrace();
-    //     }
-
-    //     executorService.shutdown();
-    // }
-
-    // static class RunnableCallable implements Callable<Void> {
-    //     private Runnable runnable;
-
-    //     public RunnableCallable(Runnable runnable) {
-    //         this.runnable = runnable;
-    //     }
-
-    //     @Override
-    //     public Void call() throws Exception {
-    //         try {
-    //             runnable.run();
-    //         } catch (Exception e) {
-    //             System.out.println("!!!");
-    //             e.printStackTrace();
-    //             throw new RuntimeException("Exception in Runnable", e);
-    //         }
-    //         return null;
-    //     }
-    // }
-
 
     private static void log(String str) {
         System.out.println(str);

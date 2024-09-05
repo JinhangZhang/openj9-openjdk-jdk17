@@ -28,7 +28,6 @@
  *
  * Helper class of SSL/TLS client/server communication.
  *
- * @library /test/lib
  * @author Xuelei Fan
  */
 

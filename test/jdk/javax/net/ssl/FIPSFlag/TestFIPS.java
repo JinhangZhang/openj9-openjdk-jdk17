@@ -61,6 +61,7 @@ public class TestFIPS {
             return;
         }
 
+        System.out.println("profile is: " + PROFILE);
         if (PROFILE.contains("OpenJCEPlusFIPS")) {
             if (SEMERU_FIPS.equals(args[0])) {
                 if (args[0].equals("true")) {

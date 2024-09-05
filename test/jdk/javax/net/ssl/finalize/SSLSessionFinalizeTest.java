@@ -42,10 +42,8 @@ import javax.net.ssl.SSLSessionBindingEvent;
 import javax.net.ssl.SSLSessionBindingListener;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.SSLContext;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class SSLSessionFinalizeTest {
 
@@ -98,7 +96,6 @@ public class SSLSessionFinalizeTest {
     void doServerSide() throws Exception {
         SSLServerSocketFactory sslssf =
             (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
-
         SSLServerSocket sslServerSocket =
             (SSLServerSocket) sslssf.createServerSocket(serverPort);
         serverPort = sslServerSocket.getLocalPort();
@@ -110,8 +107,6 @@ public class SSLSessionFinalizeTest {
 
         while (serverReady) {
             SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
-            SSLSession sslSession = sslSocket.getSession();
-            System.out.println("Cipher Suite used: " + sslSession.getCipherSuite());
 
 //            System.out.printf("  accept: %s%n", sslSocket);
             InputStream sslIS = sslSocket.getInputStream();

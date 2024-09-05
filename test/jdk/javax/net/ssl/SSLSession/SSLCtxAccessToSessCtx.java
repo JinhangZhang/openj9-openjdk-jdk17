@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.security.KeyStore;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class SSLCtxAccessToSessCtx  {
 
@@ -189,7 +188,6 @@ public class SSLCtxAccessToSessCtx  {
         sslctx = SSLContext.getInstance("TLS");
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
         KeyStore ks = KeyStore.getInstance("JKS");
-
         ks.load(new FileInputStream(keyFilename), passwd.toCharArray());
         kmf.init(ks, passwd.toCharArray());
         sslctx.init(kmf.getKeyManagers(), null, null);

@@ -28,7 +28,6 @@
  * @test
  * @bug 8233619
  * @summary SSLEngine has not yet caused Solaris kernel to panic
- * @library /test/lib
  * @run main/othervm FinishedPresent
  */
 import javax.net.ssl.*;

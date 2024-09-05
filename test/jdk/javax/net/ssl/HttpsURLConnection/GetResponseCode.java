@@ -39,7 +39,6 @@ import javax.net.ssl.*;
 import java.security.cert.Certificate;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class GetResponseCode implements HostnameVerifier {
     /*

@@ -55,7 +55,6 @@ import java.security.Security;
 import java.security.cert.Certificate;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class CriticalSubjectAltName implements HostnameVerifier {
     /*
@@ -201,11 +200,20 @@ public class CriticalSubjectAltName implements HostnameVerifier {
                     if ("Algorithm constraints check failed on signature algorithm: MD5withRSA".equals(e.getMessage())) {
                         System.out.println("MD5withRSA is not a supported signature algorithm.");
                         return;
+                    } else {
+                        System.out.println("Unexpected exception msg: <" + e.getMessage() + "> is caught");
+                        return;
                     }
+                } else {
+                    System.out.println("Unexpected exception is caught");
+                    e.printStackTrace();
+                    return;
                 }
+            } else {
+                System.out.println("Unexpected exception is caught in Non-FIPS mode");
+                e.printStackTrace();
+                return;
             }
-            e.printStackTrace();
-            return;
         }
     }
 

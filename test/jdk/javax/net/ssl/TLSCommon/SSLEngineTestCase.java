@@ -189,10 +189,9 @@ abstract public class SSLEngineTestCase {
     private static final String[] SUPPORTED_NON_KRB_CIPHERS;
 
     private static final boolean ISFIPS = Boolean.parseBoolean(System.getProperty("semeru.fips"));
-    private static final String PROFILE = System.getProperty("semeru.customprofile");
 
     static {
-        if (ISFIPS && PROFILE.equals("OpenJCEPlusFIPS.FIPS140-3-Test-TLS")) {
+        if (ISFIPS) {
             TLS13_CIPHERS = new String[] {
                 "TLS_AES_256_GCM_SHA384",
                 "TLS_AES_128_GCM_SHA256"
@@ -805,7 +804,7 @@ abstract public class SSLEngineTestCase {
      */
     public static SSLContext getContext() {
         try {
-            if(!(ISFIPS && PROFILE.equals("OpenJCEPlusFIPS.FIPS140-3-Test-TLS"))) {
+            if (!(ISFIPS)) {
                 java.security.Security.setProperty(
                             "jdk.tls.disabledAlgorithms", "");
                 java.security.Security.setProperty(
@@ -859,8 +858,7 @@ abstract public class SSLEngineTestCase {
      * SSLEngineTestCase.TEST_MODE is "krb".
      */
     public static void setUpAndStartKDCIfNeeded() {
-        if (TEST_MODE.equals("krb") && 
-        (!(ISFIPS && PROFILE.equals("OpenJCEPlusFIPS.FIPS140-3-Test-TLS")))) {
+        if (TEST_MODE.equals("krb") && !ISFIPS) {
             setUpAndStartKDC();
         }
     }

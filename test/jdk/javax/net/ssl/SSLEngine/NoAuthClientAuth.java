@@ -152,16 +152,41 @@ public class NoAuthClientAuth {
                 tlsProtocol = args[0];
             }
         }
-        if (tlsProtocol == null) {
-            return;
-        }
+        // if (tlsProtocol == null) {
+        //     return;
+        // }
 
         if (debug) {
             System.setProperty("javax.net.debug", "all");
         }
 
         NoAuthClientAuth test = new NoAuthClientAuth();
-        test.runTest();
+        try {
+            test.runTest();
+        } catch (java.lang.IllegalArgumentException iae) {
+            if (Utils.isFIPS()) {
+                if (tlsProtocol == null) {
+                    if ("Unsupported protocolnull".equals(iae.getMessage())) {
+                        System.out.println("Expected exception msg: <Unsupported protocolnull> is caught");
+                        return;
+                    } else {
+                        System.out.println("Unexpected exception msg: <" + iae.getMessage() + "> is caught");
+                        return;
+                    }
+                } else {
+                    System.out.println("Unexpected exception is caught");
+                    iae.printStackTrace();
+                    return;
+                }
+            } else {
+                System.out.println("Unexpected exception is caught in Non-FIPS mode");
+                iae.printStackTrace();
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
 
         System.out.println("Test Passed.");
     }

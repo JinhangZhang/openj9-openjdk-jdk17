@@ -42,7 +42,6 @@ import java.security.KeyStore;
 import java.security.SecureRandom;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class RenegotiateTLS13 {
 

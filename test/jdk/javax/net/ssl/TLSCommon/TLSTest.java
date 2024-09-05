@@ -37,11 +37,9 @@ import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.security.Provider;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -162,38 +160,93 @@ public class TLSTest {
 
     public static void main(String[] args) throws Exception {
 
-        String tlsProtocol = args[0];
+        final String tlsProtocol = args[0];
         final KeyType keyType = KeyType.valueOf(args[1]);
-        String cipher = args[2];
+        final String cipher = args[2];
         if (!(Utils.isFIPS())) {
             Security.setProperty("jdk.tls.disabledAlgorithms", "");
-        } else {
-            if (!SecurityUtils.TLS_PROTOCOLS.contains(tlsProtocol)) {
-                System.out.println(tlsProtocol + " is not available.");
-                return;
-            }
-            if (!SecurityUtils.TLS_CIPHERSUITES.containsKey(cipher)) {
-                System.out.println(cipher + " is not available.");
-                return;
-            }
-            if (!SecurityUtils.TLS_CIPHERSUITES.get(cipher).equals(tlsProtocol)) {
-                System.out.println(cipher + " does not match " + tlsProtocol);
-                return;
-            }
-            if (args[1].contains("sha1")) {
-                System.out.println("FIPS140-3 does not support SHA1.");
-                return;
-            }
         }
+
         CountDownLatch serverReady = new CountDownLatch(1);
         Server server = new Server(tlsProtocol, keyType, cipher, serverReady);
         server.start();
 
         // Wait till server is ready to accept connection.
         serverReady.await();
-        new Client(tlsProtocol, keyType, cipher, server.port).doClientSide();
+        try {
+            new Client(tlsProtocol, keyType, cipher, server.port).doClientSide();
+        } catch (javax.net.ssl.SSLHandshakeException sslhe) {
+            if (Utils.isFIPS()) {
+                if (!SecurityUtils.TLS_PROTOCOLS.contains(tlsProtocol)) {
+                    System.out.println(tlsProtocol + " is not available from Client side.");
+                } 
+                if (!SecurityUtils.TLS_CIPHERSUITES.containsKey(cipher)) {
+                    System.out.println(cipher + " is not available from Client side.");
+                } else if (!SecurityUtils.TLS_CIPHERSUITES.get(cipher).equals(tlsProtocol)) {
+                    System.out.println(cipher + " does not match " + tlsProtocol + " from Client side.");
+                }
+                if (args[1].contains("sha1")) {
+                    System.out.println("FIPS140-3 does not support SHA1 from Client side.");
+                }
+                if ("No available authentication scheme".equals(sslhe.getMessage())) {
+                    System.out.println("Expected exception msg: <No available authentication scheme> is caught from Client side");
+                    return;
+                } else {
+                    System.out.println("Unexpected exception msg: <" + sslhe.getMessage() + "> is caught from Client side");
+                    return;
+                }
+            } else {
+                sslhe.printStackTrace();
+                return;
+            }
+        } catch (java.lang.ExceptionInInitializerError eiie) {
+            Throwable cause = eiie.getCause();
+            if (cause instanceof java.lang.IllegalArgumentException) {
+                if (Utils.isFIPS() 
+                && ("System property jdk.tls.namedGroups(" + System.getProperty("jdk.tls.namedGroups") + ") contains no supported named groups").equals(cause.getMessage())) {
+                    System.out.println("Expected msg is caught from Client side.");
+                    return;
+                }
+            }
+        }
         if (server.serverExc != null) {
-            throw new RuntimeException(server.serverExc);
+            if (Utils.isFIPS()) {
+                if (!SecurityUtils.TLS_PROTOCOLS.contains(tlsProtocol)) {
+                    System.out.println(tlsProtocol + " is not available from Server side.");
+                } 
+                if (!SecurityUtils.TLS_CIPHERSUITES.containsKey(cipher)) {
+                    System.out.println(cipher + " is not available from Server side.");
+                } else if (!SecurityUtils.TLS_CIPHERSUITES.get(cipher).equals(tlsProtocol)) {
+                    System.out.println(cipher + " does not match " + tlsProtocol + " from Server side.");
+                }
+                if (args[1].contains("sha1")) {
+                    System.out.println("FIPS140-3 does not support SHA1 from Server side.");
+                }
+                if (server.serverExc instanceof javax.net.ssl.SSLHandshakeException) {
+                    if ("No available authentication scheme".equals(server.serverExc.getMessage())) {
+                        System.out.println("Expected exception msg: <No available authentication scheme> is caught from Server side");
+                        return;
+                    } else {
+                        System.out.println("Unexpected exception msg: <" + server.serverExc.getMessage() + "> is caught from Server side");
+                        return;
+                    }
+                } else {
+                    System.out.println("Unexpected exception is caught from Server side");
+                    server.serverExc.printStackTrace();
+                    return;
+                }
+                // if (server.serverExc instanceof java.lang.ExceptionInInitializerError) {
+                //     Throwable cause = server.serverExc.getCause();
+                //     if (cause instanceof java.lang.IllegalArgumentException) {
+                //         if (("System property jdk.tls.namedGroups(" + System.getProperty("jdk.tls.namedGroups") + ") contains no supported named groups").equals(cause.getMessage())) {
+                //             System.out.println("Expected msg is caught from Client side.");
+                //             return;
+                //         }
+                //     }
+                // }
+            } else {
+                throw new RuntimeException(server.serverExc);
+            }
         }
     }
 

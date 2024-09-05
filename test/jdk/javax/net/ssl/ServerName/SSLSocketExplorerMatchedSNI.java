@@ -53,7 +53,6 @@ import java.net.*;
 import javax.net.ssl.*;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class SSLSocketExplorerMatchedSNI {
 

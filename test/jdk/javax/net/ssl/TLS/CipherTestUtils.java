@@ -50,8 +50,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLServerSocket;
@@ -189,11 +187,6 @@ public class CipherTestUtils {
         + "fpqmCkpTanyYW9U=\n"
         + "-----END PRIVATE KEY-----";
 
-    public static final boolean ISFIPS = Boolean.parseBoolean(System.getProperty("semeru.fips"));
-    public static final String PROFILE = System.getProperty("semeru.customprofile");
-    public static final List<String> TLS_PROTOCOLS = new ArrayList<>();
-    public static final Map<String, String> TLS_CIPHERSUITES = new HashMap<>();
-
     private final SSLSocketFactory factory;
     private final X509ExtendedKeyManager clientKeyManager;
     private final X509ExtendedKeyManager serverKeyManager;
@@ -313,9 +306,6 @@ public class CipherTestUtils {
     }
 
     private CipherTestUtils() throws Exception {
-        TLS_PROTOCOLS.add("TLSv1.2");
-        TLS_PROTOCOLS.add("TLSv1.3");
-
         factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         KeyStore serverKeyStore = createServerKeyStore(SERVER_PUBLIC_KEY,
                 SERVER_PRIVATE_KEY);
@@ -482,36 +472,6 @@ public class CipherTestUtils {
         System.out.println(" WantClientAuth        : "
                 + socket.getWantClientAuth());
         System.out.println("-----------------------");
-    }
-
-    public static void printCert(String trustedCertStr) {
-        try {
-            // Remove the "BEGIN CERTIFICATE" and "END CERTIFICATE" lines and any whitespace
-            String cleanedCert = trustedCertStr.replace("-----BEGIN CERTIFICATE-----", "")
-                                                .replace("-----END CERTIFICATE-----", "")
-                                                .replaceAll("\\s", "");
-
-            // Decode the base64 string to get the certificate bytes
-            byte[] certBytes = Base64.getDecoder().decode(cleanedCert);
-
-            // Create a CertificateFactory for X.509 certificates
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-
-            // Generate the X509Certificate object
-            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(certBytes));
-
-            // Print the certificate details
-            System.out.println("Issuer: " + cert.getIssuerDN());
-            System.out.println("Subject: " + cert.getSubjectDN());
-            System.out.println("Serial Number: " + cert.getSerialNumber());
-            System.out.println("Not Before: " + cert.getNotBefore());
-            System.out.println("Not After: " + cert.getNotAfter());
-            System.out.println("Signature Algorithm: " + cert.getSigAlgName());
-            System.out.println("Version: " + cert.getVersion());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     private static KeyStore createServerKeyStore(String publicKey,

@@ -59,7 +59,6 @@ public class CipherTest {
 
     private static PeerFactory peerFactory;
     public static final boolean ISFIPS = Boolean.parseBoolean(System.getProperty("semeru.fips"));
-    public static final String PROFILE = System.getProperty("semeru.customprofile");
 
     static abstract class Server implements Runnable {
 
@@ -139,7 +138,7 @@ public class CipherTest {
         String[] cipherSuites = socket.getSupportedCipherSuites();
         String[] protocols = null;
         String[] clientAuths = null;
-        if (ISFIPS && PROFILE.equals("OpenJCEPlusFIPS.FIPS140-3-Test-TLS")) {
+        if (ISFIPS) {
             clientAuths = new String[]{null, "RSA"};
             List<String> tmp = new ArrayList<>();
             for (String protocol : socket.getSupportedProtocols()) {
@@ -267,7 +266,7 @@ public class CipherTest {
                     runTest(params);
                     System.out.println("Passed " + params);
                 } catch (javax.net.ssl.SSLException sslException) {
-                    if (ISFIPS && PROFILE.equals("OpenJCEPlusFIPS.FIPS140-3-Test-TLS")) {
+                    if (ISFIPS) {
                         if ("DSA signing not supported in FIPS".equals(sslException.getMessage())) {
                             System.out.println("Expected exception msg: <DSA signing not supported in FIPS> is caught.");
                         } else {

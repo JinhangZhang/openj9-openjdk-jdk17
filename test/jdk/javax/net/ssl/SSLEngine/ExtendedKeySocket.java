@@ -25,7 +25,6 @@
  * @test
  * @bug 4981697
  * @summary Rework the X509KeyManager to avoid incompatibility issues
- * @library /test/lib
  * @run main/othervm ExtendedKeySocket
  *
  *     SunJSSE does not support dynamic system properties, no way to re-use
@@ -91,9 +90,9 @@ public class ExtendedKeySocket {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
         KeyStore keyKS = KeyStore.getInstance("JKS");
-        KeyStore trustKS = KeyStore.getInstance("JKS");
-
         keyKS.load(new FileInputStream(keyFilename), passwd);
+
+        KeyStore trustKS = KeyStore.getInstance("JKS");
         trustKS.load(new FileInputStream(trustFilename), passwd);
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");

@@ -42,7 +42,6 @@ import java.security.Security;
 import javax.net.ssl.*;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class JSSERenegotiate {
 
@@ -225,6 +224,7 @@ public class JSSERenegotiate {
 
         if (debug)
             System.setProperty("javax.net.debug", "all");
+
         /*
          * Start the tests.
          */

@@ -46,7 +46,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jdk.test.lib.hexdump.HexPrinter;
-import jdk.test.lib.Utils;
 
 /**
  * An example to show the way to use SSLEngine in datagram connections.

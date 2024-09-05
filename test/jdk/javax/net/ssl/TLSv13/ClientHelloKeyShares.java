@@ -189,7 +189,6 @@ public class ClientHelloKeyShares {
         int ver_major = Byte.toUnsignedInt(data.get());
         int ver_minor = Byte.toUnsignedInt(data.get());
         int recLen = Short.toUnsignedInt(data.getShort());
-        System.out.println("TLS record header length: " + recLen);
 
         // Simple sanity checks
         if (type != 22) {
@@ -204,7 +203,6 @@ public class ClientHelloKeyShares {
         int msgHdr = data.getInt();
         int msgType = (msgHdr >> 24) & 0x000000FF;
         int msgLen = msgHdr & 0x00FFFFFF;
-        System.out.println("handshake message header length: " + msgLen);
 
         // More simple sanity checks
         if (msgType != 1) {
@@ -217,21 +215,18 @@ public class ClientHelloKeyShares {
         // Jump past the session ID (if there is one)
         int sessLen = Byte.toUnsignedInt(data.get());
         if (sessLen != 0) {
-            System.out.println("session ID is not null, length is: " + sessLen);
             data.position(data.position() + sessLen);
         }
 
         // Jump past the cipher suites
         int csLen = Short.toUnsignedInt(data.getShort());
         if (csLen != 0) {
-            System.out.println("cipher suites ID is not null, length is: " + csLen);
             data.position(data.position() + csLen);
         }
 
         // ...and the compression
         int compLen = Byte.toUnsignedInt(data.get());
         if (compLen != 0) {
-            System.out.println("compression is not null, length is: " + compLen);
             data.position(data.position() + compLen);
         }
 
@@ -241,24 +236,20 @@ public class ClientHelloKeyShares {
         boolean foundSupVer = false;
         boolean foundKeyShare = false;
         int extsLen = Short.toUnsignedInt(data.getShort());
-        System.out.println("extsLen is: " + extsLen);
         List<Integer> supGrpList = new ArrayList<>();
         List<Integer> chKeyShares = new ArrayList<>();
         while (data.hasRemaining()) {
             int extType = Short.toUnsignedInt(data.getShort());
             int extLen = Short.toUnsignedInt(data.getShort());
             boolean foundTLS13 = false;
-            System.out.println("extension type is: " + extType);
             switch (extType) {
                 case HELLO_EXT_SUPP_GROUPS:
-                    System.out.println("This extType is HELLO_EXT_SUPP_GROUPS. extension type is: " + extType);
                     int supGrpLen = Short.toUnsignedInt(data.getShort());
                     for (int remain = supGrpLen; remain > 0; remain -= 2) {
                         supGrpList.add(Short.toUnsignedInt(data.getShort()));
                     }
                     break;
                 case HELLO_EXT_SUPP_VERS:
-                    System.out.println("This extType is HELLO_EXT_SUPP_VERS. extension type is: " + extType);
                     foundSupVer = true;
                     int supVerLen = Byte.toUnsignedInt(data.get()); // 04 
                     for (int remain = supVerLen; remain > 0; remain -= 2) {
@@ -272,18 +263,14 @@ public class ClientHelloKeyShares {
                     }
                     break;
                 case HELLO_EXT_KEY_SHARE:
-                    System.out.println("This extType is HELLO_EXT_KEY_SHARE. extension type is: " + extType);
                     foundKeyShare = true;
                     int ksListLen = Short.toUnsignedInt(data.getShort());
-                    System.out.println("ksListLen before while-loop is: " + ksListLen);
                     while (ksListLen > 0) {
                         int ks = Short.toUnsignedInt(data.getShort());
-                        System.out.println("keyshare is: " + ks);
                         chKeyShares.add(ks);
                         int ksLen = Short.toUnsignedInt(data.getShort());
                         data.position(data.position() + ksLen);
                         ksListLen -= (4 + ksLen);
-                        System.out.println("ksListLen is: " + ksListLen);
                     }
                     break;
                 default:

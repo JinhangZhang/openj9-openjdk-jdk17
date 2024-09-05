@@ -639,10 +639,10 @@ public class TLSWithEdDSA extends SSLSocketTemplate {
     private static void runtest(String testNameFmt, SessionChecker cliChk,
             Class<? extends Throwable> cliExpExc, SessionChecker servChk,
             Class<? extends Throwable> servExpExc) {
-        if (!(Utils.isFIPS())) {
-            TEST_PROTOS = List.of(
-                "TLSv1.3", "TLSv1.2");
-        }
+        // if (!(Utils.isFIPS())) {
+        //     TEST_PROTOS = List.of(
+        //         "TLSv1.3", "TLSv1.2");
+        // }
         TEST_PROTOS.forEach(protocol -> {
             clientParameters.put(ParamType.PROTOS, protocol);
             TLSWithEdDSA testObj = new TLSWithEdDSA(cliChk, cliExpExc, servChk,

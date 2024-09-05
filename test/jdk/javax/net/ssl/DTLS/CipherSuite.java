@@ -75,18 +75,29 @@ public class CipherSuite extends DTLSOverDatagram {
         try {
             testCase.runTest(testCase);
         } catch (javax.net.ssl.SSLHandshakeException sslhe) {
-            if (Utils.isFIPS()
-            && !SecurityUtils.TLS_CIPHERSUITES.containsKey(cipherSuite)) {
-                if ("No appropriate protocol (protocol is disabled or cipher suites are inappropriate)".equals(sslhe.getMessage())) {
-                    System.out.println("Expected exception msg: <No appropriate protocol (protocol is disabled or cipher suites are inappropriate)> is caught");
+            if (Utils.isFIPS()) {
+                if(!SecurityUtils.TLS_CIPHERSUITES.containsKey(cipherSuite)) {
+                    if ("No appropriate protocol (protocol is disabled or cipher suites are inappropriate)".equals(sslhe.getMessage())) {
+                        System.out.println("Expected exception msg: <No appropriate protocol (protocol is disabled or cipher suites are inappropriate)> is caught");
+                        return;
+                    } else {
+                        System.out.println("Unexpected exception msg: <" + sslhe.getMessage() + "> is caught");
+                        return;
+                    }
+                } else {
+                    System.out.println("Unexpected exception is caught");
+                    sslhe.printStackTrace();
                     return;
                 }
+            } else {
+                System.out.println("Unexpected exception is caught in Non-FIPS mode");
+                sslhe.printStackTrace();
+                return;
             }
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
-        testCase.runTest(testCase);
     }
 
     @Override

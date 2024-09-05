@@ -36,9 +36,6 @@ import java.io.*;
 import java.security.*;
 import java.nio.*;
 
-import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
-
 public class ArgCheck {
 
     private static boolean debug = false;
@@ -260,8 +257,6 @@ public class ArgCheck {
 
         KeyStore ks = KeyStore.getInstance("JKS");
         KeyStore ts = KeyStore.getInstance("JKS");
-
-        ks.load(null, null);
 
         char[] passphrase = "passphrase".toCharArray();
 

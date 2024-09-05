@@ -41,7 +41,6 @@ import javax.net.ssl.*;
 import java.util.Arrays;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class UseCipherSuitesOrder {
 

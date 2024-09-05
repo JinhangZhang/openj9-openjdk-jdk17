@@ -368,37 +368,6 @@ public class SSLSocketSNISensitive {
         clientRequestedHostname = args[1];
     }
 
-    private static void printCert(String trustedCertStr, int index) {
-        try {
-            // Remove the "BEGIN CERTIFICATE" and "END CERTIFICATE" lines and any whitespace
-            String cleanedCert = trustedCertStr.replace("-----BEGIN CERTIFICATE-----", "")
-                                                .replace("-----END CERTIFICATE-----", "")
-                                                .replaceAll("\\s", "");
-
-            // Decode the base64 string to get the certificate bytes
-            byte[] certBytes = Base64.getDecoder().decode(cleanedCert);
-
-            // Create a CertificateFactory for X.509 certificates
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-
-            // Generate the X509Certificate object
-            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(certBytes));
-
-            // Print the certificate details
-            System.out.println("Issuer: " + cert.getIssuerDN());
-            System.out.println("Subject: " + cert.getSubjectDN());
-            System.out.println("Serial Number: " + cert.getSerialNumber());
-            System.out.println("Not Before: " + cert.getNotBefore());
-            System.out.println("Not After: " + cert.getNotAfter());
-            System.out.println("Signature Algorithm: " + cert.getSigAlgName());
-            System.out.println("Version: " + cert.getVersion());
-
-            signatureAlgos[index] = cert.getSigAlgName();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private static SSLContext generateSSLContext(boolean isClient)
             throws Exception {
 
@@ -407,7 +376,6 @@ public class SSLSocketSNISensitive {
 
         // create a key store
         KeyStore ks = KeyStore.getInstance("JKS");
-
         ks.load(null, null);
 
         // import the trused cert
@@ -488,16 +456,6 @@ public class SSLSocketSNISensitive {
          */
         parseArguments(args);
 
-        System.out.println("Now printing trustedCertStr==================");
-        printCert(trustedCertStr, 0);
-        System.out.println("Now printing targetCertStr_A==================");
-        printCert(targetCertStr_A, 1);
-        System.out.println("Now printing targetCertStr_B==================");
-        printCert(targetCertStr_B, 2);
-        System.out.println("Now printing targetCertStr_C==================");
-        printCert(targetCertStr_C, 3);
-        System.out.println("Now printing targetCertStr_D==================");
-        printCert(targetCertStr_D, 4);
         /*
          * Start the tests.
          */
@@ -505,17 +463,31 @@ public class SSLSocketSNISensitive {
             new SSLSocketSNISensitive();
         } catch (Exception e) {
             if (Utils.isFIPS()) {
-                for (int i=0; i<signatureAlgos.length; i++) {
-                    if (signatureAlgos[i].contains("MD5") 
-                     && e instanceof javax.net.ssl.SSLHandshakeException
-                     && "no cipher suites in common".equals(e.getMessage())) {
+                // for (int i=0; i<signatureAlgos.length; i++) {
+                //     if (signatureAlgos[i].contains("MD5") 
+                //      && e instanceof javax.net.ssl.SSLHandshakeException
+                //      && "no cipher suites in common".equals(e.getMessage())) {
+                //         System.out.println("Expected exception msg: <no cipher suites in common> is caught.");
+                //         return;
+                //     }
+                // }
+                if (e instanceof javax.net.ssl.SSLHandshakeException) {
+                    if ("no cipher suites in common".equals(e.getMessage())) {
                         System.out.println("Expected exception msg: <no cipher suites in common> is caught.");
                         return;
+                    } else {
+                        System.out.println("Unexpected exception msg: <" + e.getMessage() + "> is caught.");
+                        return;
                     }
+                } else {
+                    System.out.println("Unexpected exception msg is caught.");
+                    return;
                 }
+            } else {
+                System.out.println("failure is not in FIPS mode.");
+                e.printStackTrace();
+                return;
             }
-            e.printStackTrace();
-            return;
         }
     }
 

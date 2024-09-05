@@ -248,11 +248,12 @@ public class TestAllSuites {
                 case "TLSv1.1" -> SecurityUtils.removeFromDisabledTlsAlgs("TLSv1.1");
                 case "TLSv1.3" -> SecurityUtils.addToDisabledTlsAlgs("TLSv1.2");
             }
-        } else {
-            if (!SecurityUtils.TLS_PROTOCOLS.contains(args[0])) {
-                return;
-            }
-        }
+        } 
+        // else {
+        //     if (!SecurityUtils.TLS_PROTOCOLS.contains(args[0])) {
+        //         return;
+        //     }
+        // }
 
         TestAllSuites testAllSuites = new TestAllSuites(args[0]);
         testAllSuites.createSSLEngines();

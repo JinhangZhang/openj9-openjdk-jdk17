@@ -41,7 +41,6 @@ import java.util.*;
 import java.security.*;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 /**
  * Session cache size tests cover the following cases:

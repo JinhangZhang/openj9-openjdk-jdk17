@@ -39,7 +39,6 @@ import java.security.*;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class EngineCloseOnAlert {
 

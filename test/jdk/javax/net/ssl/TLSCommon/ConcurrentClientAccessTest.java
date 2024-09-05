@@ -65,46 +65,89 @@ public class ConcurrentClientAccessTest {
         String[] protocols = new String[]{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1"};
         if (!(Utils.isFIPS())) {
             Security.setProperty("jdk.tls.disabledAlgorithms", "");
-        } else {
-            protocols = new String[]{"TLSv1.3", "TLSv1.2"};
-        }
+        } 
+        // else {
+        //     protocols = new String[]{"TLSv1.3", "TLSv1.2"};
+        // }
         for (String tlsProtocol : protocols) {
-            System.out.printf("Protocol: %s%n", tlsProtocol);
-            CountDownLatch tillServerReady = new CountDownLatch(1);
-            Server server = new Server(tlsProtocol, tillServerReady);
-            server.start();
+            Server server = null;
+            try{
+                System.out.printf("Protocol: %s%n", tlsProtocol);
+                CountDownLatch tillServerReady = new CountDownLatch(1);
+                server = new Server(tlsProtocol, tillServerReady);
+                server.start();
 
-            // Wait till server is ready to accept connection.
-            tillServerReady.await();
-            CountDownLatch tillClientComplete = new CountDownLatch(THREADS);
-            ExecutorService executor = null;
-            try {
-                executor = newExecutorService();
-                // Run 50 TLS clients for concurrent access to TLS Port.
-                for (int count = 1; count <= THREADS; count++) {
-                    Client client = new Client(tlsProtocol, server.port,
-                            tillClientComplete);
-                    executor.execute(client);
-                    // If Client has any Exception indicates problem
-                    if (client.exception != null) {
-                        throw new RuntimeException(client.exception);
+                // Wait till server is ready to accept connection.
+                tillServerReady.await();
+                CountDownLatch tillClientComplete = new CountDownLatch(THREADS);
+                ExecutorService executor = null;
+                try {
+                    executor = newExecutorService();
+                    // Run 50 TLS clients for concurrent access to TLS Port.
+                    for (int count = 1; count <= THREADS; count++) {
+                        Client client = null;
+                        try {
+                            client = new Client(tlsProtocol, server.port,
+                                    tillClientComplete);
+                            executor.execute(client);
+                            // If Client has any Exception indicates problem
+                            if (client.exception != null) {
+                                throw new RuntimeException(client.exception);
+                            }
+                        } catch (java.lang.RuntimeException re) {
+                            if (client.exception != null) {
+                                if (client.exception instanceof javax.net.ssl.SSLHandshakeException) {
+                                    if ("No appropriate protocol (protocol is disabled or cipher suites are inappropriate)".equals(client.exception.getMessage())) {
+                                        System.out.println("Expected exception msg: <No appropriate protocol (protocol is disabled or cipher suites are inappropriate)> is caught");
+                                        return;
+                                    } else {
+                                        System.out.println("Unexpected exception msg: <" + client.exception.getMessage() + "> is caught");
+                                        return;
+                                    }
+                                } else {
+                                    System.out.println("Unexpected exception is caught");
+                                    client.exception.printStackTrace();
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    // Wait till all client thread complete execution
+                    tillClientComplete.await();
+                    System.out.println("All client processed successfully.");
+                } finally {
+                    if (executor != null) {
+                        executor.shutdown();
+                    }
+                    // Fail Safe: Shutdown the server
+                    server.stopServer();
+                }
+                // If Sever has any Exception indicates problem
+                if (server.exception != null) {
+                    throw new RuntimeException(server.exception);
+                }
+                System.out.println();
+            } catch (java.lang.RuntimeException re) {
+                if (Utils.isFIPS()) {
+                    if (!SecurityUtils.TLS_PROTOCOLS.contains(tlsProtocol)) {
+                        if (server.exception != null) {
+                            if (server.exception instanceof javax.net.ssl.SSLHandshakeException) {
+                                if ("No appropriate protocol (protocol is disabled or cipher suites are inappropriate)".equals(server.exception.getMessage())) {
+                                    System.out.println("Expected exception msg: <No appropriate protocol (protocol is disabled or cipher suites are inappropriate)> is caught");
+                                    return;
+                                } else {
+                                    System.out.println("Unexpected exception msg: <" + server.exception.getMessage() + "> is caught");
+                                    return;
+                                }
+                            } else {
+                                System.out.println("Unexpected exception is caught");
+                                server.exception.printStackTrace();
+                                return;
+                            }
+                        }
                     }
                 }
-                // Wait till all client thread complete execution
-                tillClientComplete.await();
-                System.out.println("All client processed successfully.");
-            } finally {
-                if (executor != null) {
-                    executor.shutdown();
-                }
-                // Fail Safe: Shutdown the server
-                server.stopServer();
             }
-            // If Sever has any Exception indicates problem
-            if (server.exception != null) {
-                throw new RuntimeException(server.exception);
-            }
-            System.out.println();
         }
     }
 

@@ -44,7 +44,6 @@ import javax.net.ssl.*;
 import java.security.cert.*;
 
 import jdk.test.lib.Utils;
-import jdk.test.lib.security.SecurityUtils;
 
 public class HttpsURLConnectionLocalCertificateChain
         implements HandshakeCompletedListener,
