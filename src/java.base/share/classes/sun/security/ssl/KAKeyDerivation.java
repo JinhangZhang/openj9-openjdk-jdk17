@@ -32,6 +32,8 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLHandshakeException;
+import javax.security.auth.DestroyFailedException;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
@@ -40,8 +42,6 @@ import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
-
-import sun.security.util.KeyUtil;
 
 /**
  * A common class for creating various KeyDerivation types.
@@ -124,6 +124,7 @@ public class KAKeyDerivation implements SSLKeyDerivation {
             throws GeneralSecurityException, IOException {
         SecretKey earlySecret = null;
         SecretKey saltSecret = null;
+        SecretKey ikm = null;
 
         CipherSuite.HashAlg hashAlg = context.negotiatedCipherSuite.hashAlg;
         SSLKeyDerivation kd = context.handshakeKeyDerivation;
@@ -132,31 +133,38 @@ public class KAKeyDerivation implements SSLKeyDerivation {
                 // If PSK is not in use Early Secret will still be
                 // HKDF-Extract(0, 0).
                 byte[] zeros = new byte[hashAlg.hashLength];
-                SecretKeySpec ikm
-                        = new SecretKeySpec(zeros, "TlsPreSharedSecret");
-                SecretKey earlySecret
-                        = hkdf.extract(zeros, ikm, "TlsEarlySecret");
+                HKDF initialHkdf = new HKDF(hashAlg.name);
+                earlySecret = initialHkdf.extract(zeros, new SecretKeySpec(zeros, "Generic"), "TlsEarlySecret");
                 kd = new SSLSecretDerivation(context, earlySecret);
             }
 
             // derive salt secret
-            SecretKey saltSecret = kd.deriveKey("TlsSaltSecret", null);
+            saltSecret = kd.deriveKey("TlsSaltSecret", null);
 
             // derive handshake secret
             // NOTE: do not reuse the HKDF object for "TlsEarlySecret" for
             // the handshake secret key derivation (below) as it may not
             // work with the "sharedSecret" obj.
-            KDF hkdf = KDF.getInstance(hashAlg.hkdfAlgorithm);
-            var spec = HKDFParameterSpec.ofExtract().addSalt(saltSecret);
+            HKDF hkdf = new HKDF(hashAlg.name);
             if (sharedSecret instanceof Hybrid.SecretKeyImpl hsk) {
-                spec = spec.addIKM(hsk.k1()).addIKM(hsk.k2());
+
+                byte[] k1 = hsk.k1().getEncoded();
+                byte[] k2 = hsk.k2().getEncoded();
+                byte[] combined = new byte[k1.length + k2.length];
+                System.arraycopy(k1, 0, combined, 0, k1.length);
+                System.arraycopy(k2, 0, combined, k1.length, k2.length);
+
+                ikm = new SecretKeySpec(combined, "Generic");
+                java.util.Arrays.fill(combined, (byte)0);
             } else {
-                spec = spec.addIKM(sharedSecret);
+                ikm = sharedSecret;
             }
 
-            return hkdf.deriveKey(label, spec.extractOnly());
+            return hkdf.extract(saltSecret, ikm, label);
         } finally {
-            KeyUtil.destroySecretKeys(earlySecret, saltSecret);
+            destroySecretKey(earlySecret);
+            destroySecretKey(saltSecret);
+            if (ikm != null && ikm != sharedSecret) destroySecretKey(ikm);
         }
     }
     /**
@@ -195,7 +203,7 @@ public class KAKeyDerivation implements SSLKeyDerivation {
         } catch (GeneralSecurityException gse) {
             throw new SSLHandshakeException("Could not generate secret", gse);
         } finally {
-            KeyUtil.destroySecretKeys(sharedSecret);
+            destroySecretKey(sharedSecret);
         }
     }
 
@@ -230,7 +238,32 @@ public class KAKeyDerivation implements SSLKeyDerivation {
         } catch (GeneralSecurityException gse) {
             throw new SSLHandshakeException("Could not generate secret", gse);
         } finally {
-            KeyUtil.destroySecretKeys(sharedSecret);
+            destroySecretKey(sharedSecret);
+        }
+    }
+
+    // destroy secret keys in a best-effort way
+    private static void destroySecretKey(SecretKey... keys) {
+        for (SecretKey k : keys) {
+            if (k != null) {
+                if (k instanceof SecretKeySpec sk) {
+                    SharedSecrets.getJavaxCryptoSpecAccess()
+                            .clearSecretKeySpec(sk);
+                } else if (k.getClass().getName().equals("com.sun.crypto.provider.PBKDF2KeyImpl")) {
+                    try {
+                        java.lang.reflect.Method m = k.getClass().getDeclaredMethod("clear");
+                        m.invoke(k);
+                    } catch (Exception e) {
+                        // swallow
+                    }
+                } else {
+                    try {
+                        k.destroy();
+                    } catch (DestroyFailedException e) {
+                        // swallow
+                    }
+                }
+            }
         }
     }
 }

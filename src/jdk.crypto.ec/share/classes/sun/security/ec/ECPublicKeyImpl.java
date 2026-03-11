@@ -33,6 +33,7 @@ import java.security.*;
 import java.security.interfaces.*;
 import java.security.spec.*;
 
+import sun.security.util.BitArray;
 import sun.security.util.ECParameters;
 import sun.security.util.ECUtil;
 
@@ -64,7 +65,9 @@ public final class ECPublicKeyImpl extends X509Key implements ECPublicKey {
         // generate the encoding
         algid = new AlgorithmId
             (AlgorithmId.EC_oid, ECParameters.getAlgorithmParameters(params));
-        key = ECUtil.encodePoint(w, params.getCurve());
+        // key = ECUtil.encodePoint(w, params.getCurve());
+        byte[] key = ECUtil.encodePoint(w, params.getCurve());
+        setKey(new BitArray(key.length * 8, key));
     }
 
     /**

@@ -370,7 +370,7 @@ final class KeyShareExtension {
 
                     if (!isCredentialPermitted(shc.algorithmConstraints,
                             kaCred)) {
-                        if (SSLLogger.isOn() &&
+                        if (SSLLogger.isOn &&
                                 SSLLogger.isOn("ssl,handshake")) {
                             SSLLogger.warning(
                                     "key share entry of " + ng + " does not " +
@@ -584,7 +584,7 @@ final class KeyShareExtension {
                     shc.handshakeKeyExchange = ke;
                     shc.handshakePossessions.add(pos);
 
-                    // For KEM, perform encapsulation using the client’s public
+                    // For KEM, perform encapsulation using the client's public
                     // key (KEMCredentials). The resulting encapsulated message
                     // becomes the key_share value sent to the client. The
                     // shared secret derived from encapsulation is stored in
