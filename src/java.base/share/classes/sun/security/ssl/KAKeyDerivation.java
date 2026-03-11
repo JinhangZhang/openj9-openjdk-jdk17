@@ -41,6 +41,7 @@ import java.security.Provider;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * A common class for creating various KeyDerivation types.

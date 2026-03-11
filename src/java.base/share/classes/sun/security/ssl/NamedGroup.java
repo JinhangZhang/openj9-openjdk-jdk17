@@ -35,6 +35,7 @@ import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.security.*;
 import java.security.spec.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -823,7 +824,7 @@ enum NamedGroup {
                 }
 
                 if (groupList.isEmpty() &&
-                        SSLLogger.isOn() && SSLLogger.isOn("ssl")) {
+                        SSLLogger.isOn && SSLLogger.isOn("ssl")) {
                     SSLLogger.warning("No default named groups");
                 }
             }
