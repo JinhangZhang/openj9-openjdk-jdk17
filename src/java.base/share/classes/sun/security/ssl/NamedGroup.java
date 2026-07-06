@@ -795,6 +795,9 @@ enum NamedGroup {
                 }
             } else {        // default groups
                 NamedGroup[] groups = new NamedGroup[] {
+                        // Hybrid key agreement
+                        X25519MLKEM768,
+
                         // Primary XDH (RFC 7748) curves
                         X25519,
 
@@ -813,8 +816,6 @@ enum NamedGroup {
                         FFDHE_6144,
                         FFDHE_8192,
 
-                        // Hybrid key agreement
-                        X25519MLKEM768,
                     };
 
                 groupList = new ArrayList<>(groups.length);
