@@ -370,8 +370,7 @@ final class KeyShareExtension {
 
                     if (!isCredentialPermitted(shc.algorithmConstraints,
                             kaCred)) {
-                        if (SSLLogger.isOn() &&
-                                SSLLogger.isOn("ssl,handshake")) {
+                        if (SSLLogger.isOn("ssl,handshake")) {
                             SSLLogger.warning(
                                     "key share entry of " + ng + " does not " +
                                     "comply with algorithm constraints");

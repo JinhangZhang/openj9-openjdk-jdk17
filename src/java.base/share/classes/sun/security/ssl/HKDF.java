@@ -182,6 +182,27 @@ final class HKDF {
     }
 
     /**
+     * Perform HKDF-Extract for a hybrid shared secret by concatenating
+     * the encoded bytes of two KEM outputs (k1 || k2) as the IKM.
+     *
+     * @param salt  the salt {@code SecretKey}
+     * @param keyAlg the algorithm name for the resulting key
+     * @param k1    first component of the hybrid shared secret
+     * @param k2    second component of the hybrid shared secret
+     * @return a {@code SecretKey} that is the result of the HKDF extract
+     * @throws InvalidKeyException if the salt cannot initialize the HMAC
+     */
+    SecretKey extract(SecretKey salt, String keyAlg, SecretKey k1, SecretKey k2)
+            throws InvalidKeyException {
+        byte[] ikm1 = k1.getEncoded();
+        byte[] ikm2 = k2.getEncoded();
+        byte[] ikm = new byte[ikm1.length + ikm2.length];
+        System.arraycopy(ikm1, 0, ikm, 0, ikm1.length);
+        System.arraycopy(ikm2, 0, ikm, ikm1.length, ikm2.length);
+        return extract(salt, new SecretKeySpec(ikm, keyAlg), keyAlg);
+    }
+
+    /**
      * Perform the HKDF-Expand derivation for a single-key output.
      *
      * @param pseudoRandKey the pseudo random key (PRK).

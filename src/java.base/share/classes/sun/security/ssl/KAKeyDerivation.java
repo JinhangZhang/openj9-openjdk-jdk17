@@ -38,8 +38,6 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 
-import sun.security.util.KeyUtil;
-
 /**
  * A common class for creating various KeyDerivation types.
  */
@@ -83,7 +81,7 @@ public class KAKeyDerivation implements SSLKeyDerivation {
         if (!context.negotiatedProtocol.useTLS13PlusSpec()) {
             return t12DeriveKey(algorithm, params);
         } else {
-            return t13DeriveKey(algorithm, params);
+            return t13DeriveKey(algorithm);
         }
     }
 
@@ -116,7 +114,7 @@ public class KAKeyDerivation implements SSLKeyDerivation {
         }
     }
 
-    private SecretKey deriveHandshakeSecret(String label,
+    private SecretKey deriveHandshakeSecret(String algorithm,
             SecretKey sharedSecret)
             throws GeneralSecurityException, IOException {
         SecretKey earlySecret = null;
@@ -142,13 +140,23 @@ public class KAKeyDerivation implements SSLKeyDerivation {
             // NOTE: do not reuse the HKDF object for "TlsEarlySecret" for
             // the handshake secret key derivation (below) as it may not
             // work with the "sharedSecret" obj.
-            var spec = HKDFParameterSpec.ofExtract().addSalt(saltSecret);
             if (sharedSecret instanceof Hybrid.SecretKeyImpl hsk) {
                 return hkdf.extract(saltSecret, algorithm, hsk.k1(), hsk.k2());
             }
             return hkdf.extract(saltSecret, sharedSecret, algorithm);
         } finally {
-            KeyUtil.destroySecretKeys(earlySecret, saltSecret);
+            destroySecretKey(earlySecret);
+            destroySecretKey(saltSecret);
+        }
+    }
+
+    private static void destroySecretKey(SecretKey key) {
+        if (key != null) {
+            try {
+                key.destroy();
+            } catch (javax.security.auth.DestroyFailedException e) {
+                // ignore
+            }
         }
     }
     /**
@@ -173,7 +181,7 @@ public class KAKeyDerivation implements SSLKeyDerivation {
                     KeyFactory.getInstance(algorithmName, provider) :
                     KeyFactory.getInstance(algorithmName);
             final byte[] ks = keyshare;
-            var pk = kf.translateKey(new java.security.PublicKey() {
+            PublicKey pk = (PublicKey) kf.translateKey(new PublicKey() {
                 public String getAlgorithm() { return algorithmName; }
                 public String getFormat()    { return "RAW"; }
                 public byte[] getEncoded()   { return ks.clone(); }
@@ -190,9 +198,10 @@ public class KAKeyDerivation implements SSLKeyDerivation {
 
             return new KEM.Encapsulated(derived, enc.encapsulation(), null);
         } catch (GeneralSecurityException gse) {
-            throw new SSLHandshakeException("Could not generate secret", gse);
+            throw (SSLHandshakeException) new SSLHandshakeException(
+                    "Could not generate secret").initCause(gse);
         } finally {
-            KeyUtil.destroySecretKeys(sharedSecret);
+            destroySecretKey(sharedSecret);
         }
     }
 
@@ -225,9 +234,10 @@ public class KAKeyDerivation implements SSLKeyDerivation {
 
             return deriveHandshakeSecret(type, sharedSecret);
         } catch (GeneralSecurityException gse) {
-            throw new SSLHandshakeException("Could not generate secret", gse);
+            throw (SSLHandshakeException) new SSLHandshakeException(
+                    "Could not generate secret").initCause(gse);
         } finally {
-            KeyUtil.destroySecretKeys(sharedSecret);
+            destroySecretKey(sharedSecret);
         }
     }
 }
