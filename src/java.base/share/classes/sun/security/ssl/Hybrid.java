@@ -28,7 +28,7 @@ package sun.security.ssl;
 import sun.security.util.ArrayUtil;
 import sun.security.util.CurveDB;
 import sun.security.util.ECUtil;
-import sun.security.x509.X509Key;
+import sun.security.util.DerValue;
 
 import javax.crypto.DecapsulateException;
 import javax.crypto.KEM;
@@ -442,22 +442,25 @@ public class Hybrid {
         }
 
         static byte[] onlyKey(PublicKey key) {
-            if (key instanceof X509Key xk) {
-                return xk.getKeyAsBytes();
-            }
-
-            // Fallback for 3rd-party providers
+            // Parse the BIT STRING key bytes out of the X.509
+            // SubjectPublicKeyInfo DER encoding.  We cannot use
+            // X509Key.getKeyAsBytes() directly because in JDK17 it reads
+            // bitStringKey which may be null for subclasses that only set
+            // the deprecated byte[] key field, and getKey() is protected.
             if (!"X.509".equalsIgnoreCase(key.getFormat())) {
                 throw new ProviderException("Invalid public key encoding " +
                         "format");
             }
-            var xk = new X509Key();
             try {
-                xk.decode(key.getEncoded());
-            } catch (InvalidKeyException e) {
+                // SubjectPublicKeyInfo ::= SEQUENCE {
+                //   algorithm  AlgorithmIdentifier,
+                //   subjectPublicKey  BIT STRING }
+                DerValue val = new DerValue(key.getEncoded());
+                val.data.getDerValue(); // skip AlgorithmIdentifier
+                return val.data.getUnalignedBitString().toByteArray();
+            } catch (Exception e) {
                 throw new ProviderException("Invalid public key encoding", e);
             }
-            return xk.getKeyAsBytes();
         }
     }
 
