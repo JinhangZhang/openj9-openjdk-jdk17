@@ -37,6 +37,7 @@ import java.security.spec.NamedParameterSpec;
 import javax.crypto.SecretKey;
 
 import sun.security.ssl.NamedGroup.NamedGroupSpec;
+import sun.security.util.KeyUtil;
 import sun.security.x509.X509Key;
 
 /**
@@ -138,12 +139,28 @@ final class KEMKeyExchange {
 
         @Override
         public byte[] encode() {
-            if (publicKey instanceof X509Key xk) {
-                return xk.getKeyAsBytes();
-            } else if (publicKey instanceof Hybrid.PublicKeyImpl hk) {
-                return hk.getEncoded();
+            if (publicKey instanceof X509Key) {
+                // In JDK17, X509Key.getKeyAsBytes() is broken (bitStringKey
+                // may be null), so we parse the BIT STRING via x509ToRaw.
+                try {
+                    return KeyUtil.x509ToRaw(publicKey.getEncoded());
+                } catch (IOException e) {
+                    throw new ProviderException("Invalid X.509 format", e);
+                }
+            } else {
+                String format = publicKey.getFormat();
+                if ("RAW".equalsIgnoreCase(format)) {
+                    return publicKey.getEncoded();
+                } else if ("X.509".equalsIgnoreCase(format)) {
+                    try {
+                        return KeyUtil.x509ToRaw(publicKey.getEncoded());
+                    } catch (IOException e) {
+                        throw new ProviderException("Invalid X.509 format", e);
+                    }
+                } else {
+                    throw new ProviderException("Unknown format " + format);
+                }
             }
-            throw new ProviderException("Unsupported key type: " + publicKey);
         }
 
         // Package-private

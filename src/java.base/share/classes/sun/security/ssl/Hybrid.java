@@ -28,7 +28,7 @@ package sun.security.ssl;
 import sun.security.util.ArrayUtil;
 import sun.security.util.CurveDB;
 import sun.security.util.ECUtil;
-import sun.security.util.DerValue;
+import sun.security.util.KeyUtil;
 
 import javax.crypto.DecapsulateException;
 import javax.crypto.KEM;
@@ -227,8 +227,14 @@ public class Hybrid {
                                         curve.getCurve()), curve);
                         leftKey = left.generatePublic(ecSpec);
                     } else if (leftname.startsWith("ML-KEM")) {
-                        leftKey = translateRawPublicKey(left, leftname,
-                                leftKeyBytes);
+                        try {
+                            leftKey = translateRawPublicKey(left, leftname,
+                                    leftKeyBytes);
+                        } catch (InvalidKeyException e) {
+                            leftKey = left.generatePublic(new X509EncodedKeySpec(
+                                    KeyUtil.rawToX509(left, leftname,
+                                            leftKeyBytes)));
+                        }
                     } else {
                         throw new InvalidKeyException("Unsupported left" +
                                 " algorithm: " + leftname);
@@ -241,8 +247,14 @@ public class Hybrid {
                                 new BigInteger(1, rightKeyBytes));
                         rightKey = right.generatePublic(xecSpec);
                     } else if (rightname.startsWith("ML-KEM")) {
-                        rightKey = translateRawPublicKey(right, rightname,
-                                rightKeyBytes);
+                        try {
+                            rightKey = translateRawPublicKey(right, rightname,
+                                    rightKeyBytes);
+                        } catch (InvalidKeyException e) {
+                            rightKey = right.generatePublic(new X509EncodedKeySpec(
+                                    KeyUtil.rawToX509(right, rightname,
+                                            rightKeyBytes)));
+                        }
                     } else {
                         throw new InvalidKeyException("Unsupported right" +
                                 " algorithm: " + rightname);
@@ -442,22 +454,12 @@ public class Hybrid {
         }
 
         static byte[] onlyKey(PublicKey key) {
-            // Parse the BIT STRING key bytes out of the X.509
-            // SubjectPublicKeyInfo DER encoding.  We cannot use
-            // X509Key.getKeyAsBytes() directly because in JDK17 it reads
-            // bitStringKey which may be null for subclasses that only set
-            // the deprecated byte[] key field, and getKey() is protected.
             if (!"X.509".equalsIgnoreCase(key.getFormat())) {
                 throw new ProviderException("Invalid public key encoding " +
                         "format");
             }
             try {
-                // SubjectPublicKeyInfo ::= SEQUENCE {
-                //   algorithm  AlgorithmIdentifier,
-                //   subjectPublicKey  BIT STRING }
-                DerValue val = new DerValue(key.getEncoded());
-                val.data.getDerValue(); // skip AlgorithmIdentifier
-                return val.data.getUnalignedBitString().toByteArray();
+                return KeyUtil.x509ToRaw(key.getEncoded());
             } catch (Exception e) {
                 throw new ProviderException("Invalid public key encoding", e);
             }

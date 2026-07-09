@@ -25,10 +25,18 @@
 
 package sun.security.util;
 
+import java.io.IOException;
 import java.security.AlgorithmParameters;
+import sun.security.x509.AlgorithmId;
 import java.security.Key;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+import java.security.Provider;
+import java.security.PublicKey;
 import java.security.interfaces.ECKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.security.interfaces.EdECKey;
 import java.security.interfaces.EdECPublicKey;
 import java.security.interfaces.RSAKey;
@@ -419,6 +427,68 @@ public final class KeyUtil {
         byte[] t = new byte[b.length - i];
         System.arraycopy(b, i, t, 0, t.length);
         return t;
+    }
+
+    /**
+     * Convert X.509 SubjectPublicKeyInfo encoding to raw key bytes.
+     *
+     * Equivalent to JDK27's KeyUtil.x509ToRaw(). The AlgorithmIdentifier
+     * is skipped; only the BIT STRING payload is returned.
+     *
+     * @param encoded the X.509 encoded public key bytes
+     * @return the raw key bytes
+     * @throws IOException if the encoding is malformed
+     */
+    public static byte[] x509ToRaw(byte[] encoded) throws IOException {
+        DerValue val = new DerValue(encoded);
+        if (val.tag != DerValue.tag_Sequence) {
+            throw new IOException("corrupt subject key");
+        }
+        AlgorithmId.parse(val.data.getDerValue()); // skip AlgorithmIdentifier
+        BitArray keyMaterial = val.data.getUnalignedBitString();
+        if (keyMaterial.length() % 8 != 0) {
+            throw new IOException("Unaligned bits in public key");
+        }
+        return keyMaterial.toByteArray();
+    }
+
+    /**
+     * Convert raw key bytes to a X.509 SubjectPublicKeyInfo DER encoding.
+     *
+     * Unlike JDK27's KeyUtil.rawToX509() which uses AlgorithmId.get(pname)
+     * (ML-KEM OIDs not registered in JDK17), this implementation generates
+     * a temporary key pair via the given KeyFactory's provider to obtain the
+     * correct AlgorithmIdentifier at runtime without hard-coded OIDs.
+     *
+     * @param kf  the KeyFactory whose provider supplies the AlgorithmIdentifier
+     * @param alg the algorithm name (e.g. "ML-KEM-768")
+     * @param raw the raw public key bytes
+     * @return the X.509 SubjectPublicKeyInfo DER encoding
+     * @throws InvalidKeySpecException if the encoding cannot be built
+     */
+    public static byte[] rawToX509(KeyFactory kf, String alg, byte[] raw)
+            throws InvalidKeySpecException {
+        try {
+            Provider prov = kf.getProvider();
+            // Generate a temp key pair to steal the AlgorithmIdentifier,
+            // since ML-KEM OIDs are not registered in JDK17's AlgorithmId.
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance(alg, prov);
+            byte[] tmpEncoded = kpg.generateKeyPair().getPublic().getEncoded();
+            DerValue spki = new DerValue(tmpEncoded);
+            byte[] algIdBytes = spki.data.getDerValue().toByteArray();
+
+            // Build: SEQUENCE { AlgorithmIdentifier, BIT STRING raw }
+            DerOutputStream body = new DerOutputStream();
+            body.write(algIdBytes);
+            body.putBitString(raw);
+
+            DerOutputStream out = new DerOutputStream();
+            out.write(DerValue.tag_Sequence, body);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new InvalidKeySpecException(
+                    "Cannot build X.509 encoding for " + alg, e);
+        }
     }
 
 }
