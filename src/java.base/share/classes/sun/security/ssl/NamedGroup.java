@@ -711,8 +711,6 @@ enum NamedGroup {
             return XDHKeyExchange.xdheKAGenerator.createKeyDerivation(hc);
         }
     }
-<<<<<<< HEAD
-=======
 
     private static class KEMScheme implements NamedGroupScheme {
         private static final KEMScheme instance = new KEMScheme();
@@ -839,5 +837,4 @@ enum NamedGroup {
             namedGroups = groupList.toArray(new String[0]);
         }
     }
->>>>>>> a70dd29cfee (Support TLS 1.3 Hybrid Key Exchange)
 }
