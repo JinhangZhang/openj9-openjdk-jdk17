@@ -501,14 +501,19 @@ public final class KeyUtil {
     // cannot be used by EC or RSASSA-PSS.
     public static byte[] rawToX509(String pname, byte[] bytes)
             throws NoSuchAlgorithmException {
-        AlgorithmId algid = AlgorithmId.get(pname);
-        BitArray key = new BitArray(bytes.length * 8, bytes);
-        DerOutputStream tmp = new DerOutputStream();
-        algid.encode(tmp);
-        tmp.putUnalignedBitString(key);
-        DerOutputStream out = new DerOutputStream();
-        out.write(DerValue.tag_Sequence, tmp);
-        return out.toByteArray();
+        try {
+            AlgorithmId algid = AlgorithmId.get(pname);
+            BitArray key = new BitArray(bytes.length * 8, bytes);
+            DerOutputStream tmp = new DerOutputStream();
+            algid.encode(tmp);
+            tmp.putUnalignedBitString(key);
+            DerOutputStream out = new DerOutputStream();
+            out.write(DerValue.tag_Sequence, tmp);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new NoSuchAlgorithmException(
+                    "Cannot build X.509 encoding for " + pname, e);
+        }
     }
 
     // Convert X.509 encoding to RAW encoding of a public key.
