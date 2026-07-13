@@ -35,6 +35,7 @@ import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.security.*;
 import java.security.spec.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -760,8 +761,7 @@ enum NamedGroup {
             //
             // If the System Property is not defined or the value is empty, the
             // default groups and preferences will be used.
-            String property = GetPropertyAction
-                    .privilegedGetProperty("jdk.tls.namedGroups");
+            String property = System.getProperty("jdk.tls.namedGroups");
             if (property != null && !property.isEmpty()) {
                 // remove double quote marks from beginning/end of the property
                 if (property.length() > 1 && property.charAt(0) == '"' &&

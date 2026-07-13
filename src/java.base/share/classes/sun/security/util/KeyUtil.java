@@ -27,6 +27,7 @@ package sun.security.util;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.Key;

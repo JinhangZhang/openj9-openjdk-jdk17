@@ -25,8 +25,6 @@
 
 package sun.security.ssl;
 
-import sun.security.action.GetPropertyAction;
-
 import javax.crypto.DecapsulateException;
 import javax.crypto.KEM;
 import javax.crypto.KeyAgreement;
@@ -44,6 +42,7 @@ import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 
+import sun.security.action.GetPropertyAction;
 import sun.security.util.KeyUtil;
 
 /**
@@ -293,8 +292,8 @@ public class KAKeyDerivation implements SSLKeyDerivation {
 
             return deriveHandshakeSecret(type, sharedSecret);
         } catch (GeneralSecurityException gse) {
-            // deriveHandshakeSecret() failure
-            throw new SSLHandshakeException("Could not generate secret", gse);
+            throw (SSLHandshakeException) new SSLHandshakeException(
+                    "Could not generate secret").initCause(gse);
         } finally {
             KeyUtil.destroySecretKeys(sharedSecret);
         }
