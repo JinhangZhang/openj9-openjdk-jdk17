@@ -44,7 +44,7 @@ import javax.crypto.KeyAgreement;
 import sun.security.ssl.DHKeyExchange.DHEPossession;
 import sun.security.ssl.ECDHKeyExchange.ECDHEPossession;
 import sun.security.util.CurveDB;
-
+import sun.security.action.GetPropertyAction;
 
 /**
  * An enum containing all known named groups for use in TLS.
@@ -761,7 +761,8 @@ enum NamedGroup {
             //
             // If the System Property is not defined or the value is empty, the
             // default groups and preferences will be used.
-            String property = System.getProperty("jdk.tls.namedGroups");
+            String property = GetPropertyAction
+                    .privilegedGetProperty("jdk.tls.namedGroups");
             if (property != null && !property.isEmpty()) {
                 // remove double quote marks from beginning/end of the property
                 if (property.length() > 1 && property.charAt(0) == '"' &&
