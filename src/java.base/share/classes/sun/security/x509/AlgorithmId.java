@@ -23,6 +23,12 @@
  * questions.
  */
 
+/*
+ * ===========================================================================
+ * (c) Copyright IBM Corp. 2026, 2026 All Rights Reserved
+ * ===========================================================================
+ */
+
 package sun.security.x509;
 
 import java.io.*;
@@ -212,6 +218,12 @@ public class AlgorithmId implements Serializable, DerEncoder {
                     || algid.equals(ed25519_oid)
                     || algid.equals(x448_oid)
                     || algid.equals(x25519_oid)
+                    || algid.equals(ML_DSA_44_oid)
+                    || algid.equals(ML_DSA_65_oid)
+                    || algid.equals(ML_DSA_87_oid)
+                    || algid.equals(ML_KEM_512_oid)
+                    || algid.equals(ML_KEM_768_oid)
+                    || algid.equals(ML_KEM_1024_oid)
                     || algid.equals(SHA224withECDSA_oid)
                     || algid.equals(SHA256withECDSA_oid)
                     || algid.equals(SHA384withECDSA_oid)
@@ -680,4 +692,19 @@ public class AlgorithmId implements Serializable, DerEncoder {
             ObjectIdentifier.of(KnownOIDs.SHA384withECDSA);
     public static final ObjectIdentifier SHA512withECDSA_oid =
             ObjectIdentifier.of(KnownOIDs.SHA512withECDSA);
+
+    public static final ObjectIdentifier ML_DSA_44_oid =
+            ObjectIdentifier.of(KnownOIDs.ML_DSA_44);
+    public static final ObjectIdentifier ML_DSA_65_oid =
+            ObjectIdentifier.of(KnownOIDs.ML_DSA_65);
+    public static final ObjectIdentifier ML_DSA_87_oid =
+            ObjectIdentifier.of(KnownOIDs.ML_DSA_87);
+
+    public static final ObjectIdentifier ML_KEM_512_oid =
+            ObjectIdentifier.of(KnownOIDs.ML_KEM_512);
+    public static final ObjectIdentifier ML_KEM_768_oid =
+            ObjectIdentifier.of(KnownOIDs.ML_KEM_768);
+    public static final ObjectIdentifier ML_KEM_1024_oid =
+            ObjectIdentifier.of(KnownOIDs.ML_KEM_1024);
+
 }
