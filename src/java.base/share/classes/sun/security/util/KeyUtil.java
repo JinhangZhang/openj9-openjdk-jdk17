@@ -49,10 +49,14 @@ import javax.crypto.interfaces.DHKey;
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.DHPublicKeySpec;
+import javax.crypto.spec.SecretKeySpec;
+import javax.security.auth.DestroyFailedException;
+
 import java.math.BigInteger;
 import java.security.spec.NamedParameterSpec;
 import java.util.Arrays;
 
+import jdk.internal.access.SharedSecrets;
 import sun.security.jca.JCAUtil;
 
 /**
@@ -426,6 +430,24 @@ public final class KeyUtil {
         BigInteger r = p.remainder(y);
         if (r.equals(BigInteger.ZERO)) {
             throw new InvalidKeyException("Invalid Diffie-Hellman parameters");
+        }
+    }
+
+    // destroy secret keys in a best-effort way
+    public static void destroySecretKeys(SecretKey... keys) {
+        for (SecretKey k : keys) {
+            if (k != null) {
+                if (k instanceof SecretKeySpec sk) {
+                    SharedSecrets.getJavaxCryptoSpecAccess()
+                            .clearSecretKeySpec(sk);
+                } else {
+                    try {
+                        k.destroy();
+                    } catch (DestroyFailedException e) {
+                        // swallow
+                    }
+                }
+            }
         }
     }
 
