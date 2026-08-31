@@ -202,7 +202,8 @@ public class KAKeyDerivation implements SSLKeyDerivation {
 
             return new KEM.Encapsulated(derived, enc.encapsulation(), null);
         } catch (GeneralSecurityException gse) {
-            throw new SSLHandshakeException("Could not generate secret", gse);
+            throw (SSLHandshakeException) new SSLHandshakeException(
+                    "Could not generate secret").initCause(gse);
         } finally {
             KeyUtil.destroySecretKeys(sharedSecret);
         }
@@ -237,7 +238,8 @@ public class KAKeyDerivation implements SSLKeyDerivation {
 
             return deriveHandshakeSecret(type, sharedSecret);
         } catch (GeneralSecurityException gse) {
-            throw new SSLHandshakeException("Could not generate secret", gse);
+            throw (SSLHandshakeException) new SSLHandshakeException(
+                    "Could not generate secret").initCause(gse);
         } finally {
             KeyUtil.destroySecretKeys(sharedSecret);
         }
