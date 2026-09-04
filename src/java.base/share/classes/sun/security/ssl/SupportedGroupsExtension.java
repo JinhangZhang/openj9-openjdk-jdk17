@@ -40,6 +40,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import javax.net.ssl.SSLProtocolException;
+
 import sun.security.action.GetPropertyAction;
 import sun.security.ssl.NamedGroup.NamedGroupSpec;
 import static sun.security.ssl.SSLExtension.CH_SUPPORTED_GROUPS;
@@ -212,6 +213,9 @@ final class SupportedGroupsExtension {
                 }
             } else {        // default groups
                 NamedGroup[] groups = new NamedGroup[] {
+
+                        // Hybrid key agreement
+                        NamedGroup.X25519MLKEM768,
 
                         // Primary XDH (RFC 7748) curves
                         NamedGroup.X25519,
